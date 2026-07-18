@@ -18,8 +18,6 @@ import numpy as np
 from numpy.typing import NDArray
 import math
 import random
-import signal
-import sys
 
 
 def number_recognition() -> None:
@@ -105,50 +103,48 @@ def learn_shape() -> None:
     regression(network, curve)
 
 
+def get_embedding(name: str) -> Embedding:
+    tokenizer = Tokenizer()
+
+    # Handle save
+    save_handler = SaveHandler()
+    if save_handler.has(name):
+        embedding = save_handler.load(name)
+        if not isinstance(embedding, Embedding):
+            raise MemoryError
+        return embedding
+    else:
+        # Build Tokenizer vocab
+        text_for_vocab = scrap_text(15)
+        tokenizer.build_vocab(text_for_vocab)
+
+        # Build default Embedding
+        embedding = Embedding(2)
+        embedding.set_input_shape((tokenizer.length(), 1))
+        save_handler.save(embedding, name)
+        return embedding
+
+
 def train_embedding():
     embedding_name = "embedding"
-
-    def get_embedding() -> Embedding:
-        tokenizer = Tokenizer()
-
-        # Handle save
-        save_handler = SaveHandler()
-        if save_handler.has(embedding_name):
-            embedding = save_handler.load(embedding_name)
-            if not isinstance(embedding, Embedding):
-                raise MemoryError
-            return embedding
-        else:
-            # Build Tokenizer vocab
-            text_for_vocab = scrap_text(1_000_000)
-            tokenizer.build_vocab(text_for_vocab)
-
-            # Build default Embedding
-            embedding = Embedding()
-            signal.signal(signal.SIGINT, save_handler.save(embedding, embedding_name))
-            embedding.set_input_shape((tokenizer.length(), 1))
-            save_handler.save(embedding, embedding_name)
-            return embedding
-
-    embedding = get_embedding()
-
-    def see_familiarities(word: str):
-        words, words2 = embedding.look_around(word)
-        print("")
-        for i in range(len(words)):
-            print(words[i][0] + " " * (20 - len(words[i][0])) + " | " + words2[i][0])
-        print("")
+    embedding = get_embedding(embedding_name)
 
     def train():
         embedding.set_lr(0.1)
-        text = scrap_text(length=10_000, offset=100_000)
-        embedding.cbow_training(text, batch=1)
+        text = scrap_text(15)
+        embedding.cbow_training(text, window=2, batch=100000)
         SaveHandler().save(embedding, embedding_name)
 
     train()
+    embedding.look_around('amour')
+
+
+def predict_word(sentence: str) -> None:
+    pass
 
 
 def main() -> None:
+    predict_word("roi duc duchesse prince")  # devrait retourner princesse
     train_embedding()
 
 

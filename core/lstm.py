@@ -1,0 +1,159 @@
+from __future__ import annotations
+from .layer import Layer
+import numpy as np
+from numpy.typing import NDArray
+from .functions import sigmoid
+
+
+class LSTM(Layer):
+    def __init__(self: LSTM):
+        super().__init__()
+        self.data: list[dict[str, NDArray[np.float64]]] = []
+        self.n = 0
+        self.h = np.array([[]])
+        self.c = np.array([[]])
+
+        # Input weights
+        self.Wf = np.array([[]])
+        self.Wi = np.array([[]])
+        self.Wo = np.array([[]])
+        self.Wc = np.array([[]])
+
+        # ST weights
+        self.Uf = np.array([[]])
+        self.Ui = np.array([[]])
+        self.Uo = np.array([[]])
+        self.Uc = np.array([[]])
+
+        # Biaises
+        self.bf = np.array([[]])
+        self.bi = np.array([[]])
+        self.bo = np.array([[]])
+        self.bc = np.array([[]])
+
+        self.gradient: NDArray[np.float64] | None = None
+
+    def reset_data(self: LSTM) -> None:
+        self.data = [
+            {
+                "f": np.zeros_like(self.h),
+                "o": np.zeros_like(self.h),
+                "i": np.zeros_like(self.h),
+                "c_prime": np.zeros_like(self.h),
+                "h": np.zeros_like(self.h),
+                "c": np.zeros_like(self.h),
+                "x": np.zeros_like(self.h),
+            }
+        ]
+        self.gradient = None
+
+    def set_input_shape(self: LSTM, input_shape: tuple) -> tuple:
+        n, p = input_shape
+        self.n = n
+        if p != 1:
+            raise ValueError
+        super().set_input_shape(input_shape)
+        self.h = np.zeros((self.n, p))
+        self.c = np.zeros((self.n, p))
+
+        # Input weights
+        self.Wf = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+        self.Wi = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+        self.Wo = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+        self.Wc = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+
+        # ST weights
+        self.Uf = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+        self.Ui = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+        self.Uo = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+        self.Uc = np.random.normal(0, np.sqrt(2 / (self.n * n)), size=(self.n, n))
+
+        # Biaises
+        self.bf = np.random.normal(0, np.sqrt(2 / self.n), size=(self.n, p))
+        self.bi = np.random.normal(0, np.sqrt(2 / self.n), size=(self.n, p))
+        self.bo = np.random.normal(0, np.sqrt(2 / self.n), size=(self.n, p))
+        self.bc = np.random.normal(0, np.sqrt(2 / self.n), size=(self.n, p))
+
+        self.reset_data()
+        return self.output_shape
+
+    def feed_forward(self: LSTM, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+        forget = sigmoid(self.Wf @ entry + self.Uf @ self.h + self.bf)
+        input = sigmoid(self.Wi @ entry + self.Ui @ self.h + self.bi)
+        output = sigmoid(self.Wo @ entry + self.Uo @ self.h + self.bo)
+        c_prime = np.tanh(self.Wc @ entry + self.Uc @ self.h + self.bc)
+        self.c = forget * self.c + input * c_prime
+        self.h = output * np.tanh(self.c)
+
+        self.data.append(
+            {
+                "f": forget,
+                "o": output,
+                "i": input,
+                "c_prime": c_prime,
+                "h": self.h,
+                "c": self.c,
+                "x": entry,
+            }
+        )
+
+        return self.h
+
+    def descend_gradient(self: LSTM, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+        if len(self.data) < 2:
+            raise MemoryError
+        if self.gradient is None:
+            self.gradient = gradient
+
+        # Extract memoized value
+        f = self.data[-1]["f"]
+        o = self.data[-1]["o"]
+        i = self.data[-1]["i"]
+        c_prime = self.data[-1]["c_prime"]
+        h = self.data[-1]["h"]
+        c = self.data[-1]["c"]
+        x = self.data[-1]["x"]
+        c_before = self.data[-2]["c"]
+        h_before = self.data[-2]["h"]
+        self.data.pop()
+
+        # Compute gradients
+        do = self.gradient * sigmoid(c)
+        dc = self.gradient * o * sigmoid(c) * (1 - sigmoid(c))
+        df = c_before * dc
+        di = dc * c_prime
+        dc_prime = dc * i
+
+        # Compute useful variables
+        val_f = self.Wf @ x + self.Uf @ h_before + self.bf
+        val_i = self.Wi @ x + self.Ui @ h_before + self.bi
+        val_o = self.Wo @ x + self.Uo @ h_before + self.bo
+        val_c_prime = self.Wc @ x + self.Uc @ h_before + self.bc
+        derivate_f = df * sigmoid(val_f) * (1 - sigmoid(val_f))
+        derivate_i = di * sigmoid(val_i) * (1 - sigmoid(val_i))
+        derivate_o = do * sigmoid(val_o) * (1 - sigmoid(val_o))
+        derivate_c_prime = dc_prime * 1 / np.cosh(val_c_prime) ** 2
+
+        # Compute new gradients
+        self.gradient = (
+            self.Uf @ derivate_f + self.Ui @ derivate_i + self.Uo @ derivate_o + self.Uc @ derivate_c_prime
+        )
+        new_gradient = (
+            self.Wf @ derivate_f + self.Wi @ derivate_i + self.Wo @ derivate_o + self.Wc @ derivate_c_prime
+        )
+
+        # Learn weights
+        self.Wf -= self.lr * derivate_f @ x.T
+        self.Wi -= self.lr * derivate_i @ x.T
+        self.Wo -= self.lr * derivate_o @ x.T
+        self.Wc -= self.lr * derivate_c_prime @ x.T
+        self.Uf -= self.lr * derivate_f @ h_before.T
+        self.Ui -= self.lr * derivate_i @ h_before.T
+        self.Uo -= self.lr * derivate_o @ h_before.T
+        self.Uc -= self.lr * derivate_c_prime @ h_before.T
+        self.bf -= self.lr * derivate_f
+        self.bi -= self.lr * derivate_i
+        self.bo -= self.lr * derivate_o
+        self.bc -= self.lr * derivate_c_prime
+
+        return new_gradient

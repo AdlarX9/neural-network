@@ -55,6 +55,9 @@ class Tokenizer:
             if word not in self.V:
                 self.V[word] = index
                 index += 1
+    
+    def get_word(self: Tokenizer, index: int) -> str:
+        return next(k for k, v in self.V.items() if v == index)
 
     def get_index(self: Tokenizer, word: str) -> int:
         if word not in self.V:

@@ -27,7 +27,7 @@ def get_article_text(url: str):
     return text, links
 
 
-def scrap_text(length: int = 100000, offset: int = 0) -> str:
+def scrap_text(length: int, offset: int = 0) -> str:
     directory = os.path.join("data", "text")
     path = os.path.join(directory, "scrapped.txt")
 
@@ -57,7 +57,7 @@ def scrap_text(length: int = 100000, offset: int = 0) -> str:
                 current_url = random.choice(links)
             else:
                 current_url = "https://fr.wikipedia.org/wiki/Sp%C3%A9cial:Page_au_hasard"
-            print(f"{len(words)}/{length} mots collectés", end="\r")
+            print(f"{len(words)}/{length + offset} mots collectés", end="\r")
         except Exception:
             current_url = "https://fr.wikipedia.org/wiki/Sp%C3%A9cial:Page_au_hasard"
 
