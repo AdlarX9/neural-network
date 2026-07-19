@@ -11,6 +11,9 @@ from core import (
     ConvBiais,
     Tokenizer,
     Embedding,
+    Recurrent,
+    LSTM,
+    Decoder,
 )
 from data import load_mnist_data, scrap_text, SaveHandler
 from graphics import view_numbers, regression
@@ -103,8 +106,9 @@ def learn_shape() -> None:
     regression(network, curve)
 
 
-def get_embedding(name: str) -> Embedding:
+def get_embedding(name: str) -> tuple[Embedding, bool]:
     tokenizer = Tokenizer()
+    new_one = False
 
     # Handle save
     save_handler = SaveHandler()
@@ -112,7 +116,7 @@ def get_embedding(name: str) -> Embedding:
         embedding = save_handler.load(name)
         if not isinstance(embedding, Embedding):
             raise MemoryError
-        return embedding
+        return embedding, new_one
     else:
         # Build Tokenizer vocab
         text_for_vocab = scrap_text(15)
@@ -122,12 +126,15 @@ def get_embedding(name: str) -> Embedding:
         embedding = Embedding(2)
         embedding.set_input_shape((tokenizer.length(), 1))
         save_handler.save(embedding, name)
-        return embedding
+        new_one = True
+        return embedding, new_one
 
 
-def train_embedding():
-    embedding_name = "embedding"
-    embedding = get_embedding(embedding_name)
+embedding_name = "embedding"
+
+
+def train_embedding() -> None:
+    embedding, _ = get_embedding(embedding_name)
 
     def train():
         embedding.set_lr(0.1)
@@ -136,16 +143,93 @@ def train_embedding():
         SaveHandler().save(embedding, embedding_name)
 
     train()
-    embedding.look_around('amour')
 
 
-def predict_word(sentence: str) -> None:
-    pass
+def predict_words() -> None:
+    sentence: str = str("roi duc duchesse")
+    number: int = 12
+
+    # Build network
+    context = 3
+    embedding, new = get_embedding(embedding_name)
+
+    if new:
+        train_embedding()
+
+    save_handler = SaveHandler()
+    lstm_name = "lstm"
+    if save_handler.has(lstm_name):
+        network = save_handler.load(lstm_name)
+        if not isinstance(network, Network):
+            raise MemoryError
+    else:
+        layers: list[Layer] = [Recurrent(LSTM()), Decoder(embedding)]
+        network = Network(
+            layers=layers, exit_loss=ProbaExit(), input_shape=(embedding.output_shape[0], context), lr=0.0001
+        )
+        save_handler.save(network, lstm_name)
+    tokenizer = embedding.tokenizer
+
+    def build_data() -> list[tuple[NDArray[np.float64], NDArray[np.float64]]]:
+        size = 15
+        text = scrap_text(size)
+        words = text.split(" ")
+        data: list[tuple[NDArray[np.float64], NDArray[np.float64]]] = []
+        for i in range(size - context):
+            entry = None
+            for j in range(context):
+                word = words[i + j]
+                one_hot = tokenizer.get_one_hot(word).reshape(-1, 1)
+                if entry is None:
+                    entry = one_hot
+                else:
+                    entry = np.hstack((entry, one_hot))
+            answer = tokenizer.get_one_hot(words[i + context]).reshape(-1, 1)
+            if entry is None:
+                raise ValueError
+            entry = embedding.feed_forward(entry)
+            data.append((entry, answer))
+        return data
+
+    def train() -> None:
+        data = build_data()
+        network.train(data=data, batch=100000)
+
+    network.set_lr(0.001)
+    # train()
+    save_handler.save(network, lstm_name)
+
+    words = sentence.split(" ")
+    if len(words) != context:
+        raise ValueError("mismatch len(words) and context size:", len(words), context)
+
+    predictions: list[str] = []
+
+    def predict_next_word(beginning: list[str]) -> str:
+        one_hot_sentence = None
+        for word in beginning:
+            if one_hot_sentence is None:
+                one_hot_sentence = tokenizer.get_one_hot(word).reshape(-1, 1)
+            else:
+                one_hot_sentence = np.hstack((one_hot_sentence, tokenizer.get_one_hot(word).reshape(-1, 1)))
+        if one_hot_sentence is None:
+            raise ValueError
+        embedded_sentence = embedding.feed_forward(one_hot_sentence)
+        one_hot_prediction = network.compute(embedded_sentence)
+        prediction = tokenizer.get_word(int(np.argmax(one_hot_prediction)))
+        return prediction
+
+    for _ in range(number):
+        prediction = predict_next_word(words)
+        words.append(prediction)
+        words.pop(0)
+        predictions.append(prediction)
+
+    print(sentence, "|", " ".join(predictions))
 
 
 def main() -> None:
-    predict_word("roi duc duchesse prince")  # devrait retourner princesse
-    train_embedding()
+    predict_words()
 
 
 if __name__ == "__main__":

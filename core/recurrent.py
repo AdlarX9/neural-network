@@ -15,6 +15,11 @@ class Recurrent(Block):
             if isinstance(layer, LSTM):
                 layer.reset_data()
 
+    def set_input_shape(self: Recurrent, input_shape: tuple[int, int]) -> tuple:
+        n, _ = input_shape
+        self.input_shape = input_shape
+        return super().set_input_shape((n, 1))
+
     def compute(self: Recurrent, entry: NDArray[np.float64], memorize: bool) -> NDArray[np.float64]:
         _, p = entry.shape
         out = np.array([[]])
@@ -28,8 +33,13 @@ class Recurrent(Block):
         if self.input is None:
             raise MemoryError
         _, p = self.input.shape
-        new_gradient = np.array([[]])
+        new_gradient = None
         for i in reversed(range(p)):
             gradient = super().descend_gradient(gradient)
-            new_gradient = np.vstack((gradient, new_gradient))
+            if new_gradient is None:
+                new_gradient = gradient
+            else:
+                new_gradient = np.vstack((gradient, new_gradient))
+        if new_gradient is None:
+            raise ValueError
         return new_gradient

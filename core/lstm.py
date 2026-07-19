@@ -6,7 +6,7 @@ from .functions import sigmoid
 
 
 class LSTM(Layer):
-    def __init__(self: LSTM):
+    def __init__(self: LSTM) -> None:
         super().__init__()
         self.data: list[dict[str, NDArray[np.float64]]] = []
         self.n = 0
@@ -110,7 +110,6 @@ class LSTM(Layer):
         o = self.data[-1]["o"]
         i = self.data[-1]["i"]
         c_prime = self.data[-1]["c_prime"]
-        h = self.data[-1]["h"]
         c = self.data[-1]["c"]
         x = self.data[-1]["x"]
         c_before = self.data[-2]["c"]
@@ -125,14 +124,10 @@ class LSTM(Layer):
         dc_prime = dc * i
 
         # Compute useful variables
-        val_f = self.Wf @ x + self.Uf @ h_before + self.bf
-        val_i = self.Wi @ x + self.Ui @ h_before + self.bi
-        val_o = self.Wo @ x + self.Uo @ h_before + self.bo
-        val_c_prime = self.Wc @ x + self.Uc @ h_before + self.bc
-        derivate_f = df * sigmoid(val_f) * (1 - sigmoid(val_f))
-        derivate_i = di * sigmoid(val_i) * (1 - sigmoid(val_i))
-        derivate_o = do * sigmoid(val_o) * (1 - sigmoid(val_o))
-        derivate_c_prime = dc_prime * 1 / np.cosh(val_c_prime) ** 2
+        derivate_f = df * f * (1 - f)
+        derivate_i = di * i * (1 - i)
+        derivate_o = do * o * (1 - o)
+        derivate_c_prime = dc_prime * (1 - c_prime**2)
 
         # Compute new gradients
         self.gradient = (
@@ -157,3 +152,57 @@ class LSTM(Layer):
         self.bc -= self.lr * derivate_c_prime
 
         return new_gradient
+
+    def get_data(self: LSTM) -> tuple[list[int], list[float], list[str]]:
+        int_list, float_list, str_list = super().get_data()
+        float_list += self.Wf.flatten().tolist()
+        float_list += self.Wi.flatten().tolist()
+        float_list += self.Wo.flatten().tolist()
+        float_list += self.Wc.flatten().tolist()
+        float_list += self.Uf.flatten().tolist()
+        float_list += self.Ui.flatten().tolist()
+        float_list += self.Uo.flatten().tolist()
+        float_list += self.Uc.flatten().tolist()
+        float_list += self.bf.flatten().tolist()
+        float_list += self.bi.flatten().tolist()
+        float_list += self.bo.flatten().tolist()
+        float_list += self.bc.flatten().tolist()
+        return int_list, float_list, str_list
+
+    def load_from_data(
+        self: LSTM, int_list: list[int], float_list: list[float], string_list: list[str]
+    ) -> None:
+        self.input_shape = tuple(int_list[:2])
+        self.n = self.input_shape[0]
+        del int_list[:2]
+        self.lr = float_list[0]
+        float_list.pop(0)
+        self.h = np.zeros((self.n, 1))
+        self.c = np.zeros((self.n, 1))
+
+        self.Wf = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+        self.Wi = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+        self.Wo = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+        self.Wc = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+
+        self.Uf = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+        self.Ui = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+        self.Uo = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+        self.Uc = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
+        del float_list[: self.n**2]
+
+        self.bf = np.array(float_list[: self.n]).reshape((self.n, 1))
+        del float_list[: self.n]
+        self.bi = np.array(float_list[: self.n]).reshape((self.n, 1))
+        del float_list[: self.n]
+        self.bo = np.array(float_list[: self.n]).reshape((self.n, 1))
+        del float_list[: self.n]
+        self.bc = np.array(float_list[: self.n]).reshape((self.n, 1))
+        del float_list[: self.n]

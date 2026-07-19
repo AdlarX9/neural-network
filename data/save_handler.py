@@ -15,6 +15,9 @@ from core import (
     Pool,
     Res,
     Embedding,
+    Recurrent,
+    LSTM,
+    Decoder,
 )
 import os
 import struct
@@ -37,6 +40,9 @@ layer_types = {
     "Pool": Pool,
     "Res": Res,
     "Embedding": Embedding,
+    "Recurrent": Recurrent,
+    "LSTM": LSTM,
+    "Decoder": Decoder,
 }
 
 

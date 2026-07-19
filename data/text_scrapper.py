@@ -42,7 +42,9 @@ def scrap_text(length: int, offset: int = 0) -> str:
     except Exception as e:
         print(f"Error while reading text: {e}")
 
-    words = []
+    words = "roi duc duchesse prince princesse bisous amour baise lit dormir repos travail etat salaire argent".split(
+        " "
+    )  # We set the fifteen first words as a showcase
     current_url = "https://fr.wikipedia.org/wiki/Sp%C3%A9cial:Page_au_hasard"
     visited = set()
     while len(words) < length + offset:
