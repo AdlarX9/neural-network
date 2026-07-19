@@ -139,7 +139,7 @@ def train_embedding() -> None:
     def train():
         embedding.set_lr(0.1)
         text = scrap_text(15)
-        embedding.cbow_training(text, window=2, batch=100000)
+        embedding.cbow_training(text, window=2, batch=100_000)
         SaveHandler().save(embedding, embedding_name)
 
     train()
@@ -165,7 +165,7 @@ def predict_words() -> None:
     else:
         layers: list[Layer] = [Recurrent(LSTM()), Decoder(embedding)]
         network = Network(
-            layers=layers, exit_loss=ProbaExit(), input_shape=(embedding.output_shape[0], context), lr=0.0001
+            layers=layers, exit_loss=ProbaExit(), input_shape=(embedding.output_shape[0], context), lr=0.001
         )
         save_handler.save(network, lstm_name)
     tokenizer = embedding.tokenizer
@@ -193,10 +193,9 @@ def predict_words() -> None:
 
     def train() -> None:
         data = build_data()
-        network.train(data=data, batch=100000)
+        network.train(data=data, batch=100_000)
 
-    network.set_lr(0.001)
-    # train()
+    train()
     save_handler.save(network, lstm_name)
 
     words = sentence.split(" ")
