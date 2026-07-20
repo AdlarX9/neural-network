@@ -4,6 +4,8 @@ from .block import Block
 from .fc import FC
 from .biais import Biais
 from .embedding import Embedding
+from .layer import check_shapes
+from numpy.typing import NDArray
 
 
 class Decoder(Block):
@@ -34,6 +36,9 @@ class Decoder(Block):
             raise ValueError
 
     def set_input_shape(self: Decoder, input_shape: tuple) -> tuple:
-        if input_shape != self.input_shape:
+        if not check_shapes(input_shape, self.input_shape):
             raise ValueError("mismatch in input shapes:", input_shape, self.input_shape)
         return self.output_shape
+    
+    # def backprop(self: Decoder, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    #     return self.layers[0].W.T @ gradient

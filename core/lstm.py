@@ -31,9 +31,12 @@ class LSTM(Layer):
         self.bo = np.array([[]])
         self.bc = np.array([[]])
 
-        self.gradient: NDArray[np.float64] | None = None
+        self.gradient_h: NDArray[np.float64] | None = None
+        self.gradient_c: NDArray[np.float64] | None = None
 
     def reset_data(self: LSTM) -> None:
+        self.h = np.zeros_like(self.h)
+        self.c = np.zeros_like(self.c)
         self.data = [
             {
                 "f": np.zeros_like(self.h),
@@ -45,7 +48,8 @@ class LSTM(Layer):
                 "x": np.zeros_like(self.h),
             }
         ]
-        self.gradient = None
+        self.gradient_h = None
+        self.gradient_c = None
 
     def set_input_shape(self: LSTM, input_shape: tuple) -> tuple:
         n, p = input_shape
@@ -102,8 +106,8 @@ class LSTM(Layer):
     def descend_gradient(self: LSTM, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
         if len(self.data) < 2:
             raise MemoryError
-        if self.gradient is None:
-            self.gradient = gradient
+        if self.gradient_h is None:
+            self.gradient_h = gradient
 
         # Extract memoized value
         f = self.data[-1]["f"]
@@ -112,13 +116,16 @@ class LSTM(Layer):
         c_prime = self.data[-1]["c_prime"]
         c = self.data[-1]["c"]
         x = self.data[-1]["x"]
-        c_before = self.data[-2]["c"]
         h_before = self.data[-2]["h"]
+        c_before = self.data[-2]["c"]
         self.data.pop()
 
         # Compute gradients
-        do = self.gradient * sigmoid(c)
-        dc = self.gradient * o * sigmoid(c) * (1 - sigmoid(c))
+        tanh_c = np.tanh(c)
+        do = self.gradient_h * tanh_c
+        dc = self.gradient_h * o * (1 - tanh_c**2)
+        if self.gradient_c is not None:
+            dc += self.gradient_c
         df = c_before * dc
         di = dc * c_prime
         dc_prime = dc * i
@@ -130,9 +137,10 @@ class LSTM(Layer):
         derivate_c_prime = dc_prime * (1 - c_prime**2)
 
         # Compute new gradients
-        self.gradient = (
+        self.gradient_h = (
             self.Uf @ derivate_f + self.Ui @ derivate_i + self.Uo @ derivate_o + self.Uc @ derivate_c_prime
         )
+        self.gradient_c = dc * f
         new_gradient = (
             self.Wf @ derivate_f + self.Wi @ derivate_i + self.Wo @ derivate_o + self.Wc @ derivate_c_prime
         )

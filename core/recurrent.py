@@ -27,19 +27,21 @@ class Recurrent(Block):
         for i in range(p):
             vec = entry[:, i].reshape(-1, 1)
             out = super().compute(vec, memorize)
+        if memorize:
+            self.input = entry
         return out
 
-    def descend_gradient(self: Recurrent, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def backprop(self: Recurrent, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
         if self.input is None:
             raise MemoryError
         _, p = self.input.shape
         new_gradient = None
-        for i in reversed(range(p)):
-            gradient = super().descend_gradient(gradient)
+        for _ in reversed(range(p)):
+            gradient = super().backprop(gradient)
             if new_gradient is None:
                 new_gradient = gradient
             else:
-                new_gradient = np.vstack((gradient, new_gradient))
+                new_gradient = np.hstack((gradient, new_gradient))
         if new_gradient is None:
             raise ValueError
         return new_gradient

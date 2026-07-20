@@ -3,6 +3,15 @@ import numpy as np
 from numpy.typing import NDArray
 
 
+def check_shapes(shape1: tuple, shape2: tuple) -> bool:
+    if len(shape1) != len(shape2):
+        return False
+    for i in range(len(shape1)):
+        if shape1[i] != -1 and shape2[i] != -1 and shape1[i] != shape2[i]:
+            return False
+    return True
+
+
 class Layer:
     def __init__(self: Layer) -> None:
         self.lr: float = 0.0
@@ -25,7 +34,7 @@ class Layer:
         return entry
 
     def compute(self: Layer, entry: NDArray[np.float64], memorize: bool) -> NDArray[np.float64]:
-        if entry.shape != self.input_shape:
+        if not check_shapes(entry.shape, self.input_shape):
             print(entry.shape, self.input_shape)
             raise ValueError
         if memorize:
