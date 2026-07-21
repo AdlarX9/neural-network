@@ -2,7 +2,7 @@ from __future__ import annotations
 from core.exit.exit_loss import ExitLoss
 from .network import Network
 from ..block.recurrent import Recurrent
-from ..block.decoder import Decoder
+from ..block.one_hot_maker import OneHotMaker
 from ..layer.embedding import Embedding
 from ..layer.lstm import LSTM
 from ..utils.tokenizer import Tokenizer
@@ -19,7 +19,7 @@ class LSTMNetwork(Network):
         layers = []
         input_shape = (0,)
         if embedding is not None:
-            layers = [embedding, Recurrent(LSTM()), Decoder(embedding)]
+            layers = [embedding, Recurrent(LSTM()), OneHotMaker(embedding)]
             input_shape = (embedding.input_shape[0], -1)
         super().__init__(layers=layers, input_shape=input_shape, lr=lr, exit_loss=exit_loss)
 

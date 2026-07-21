@@ -5,11 +5,10 @@ from ..layer.fc import FC
 from ..layer.biais import Biais
 from ..layer.embedding import Embedding
 from ..layer.layer import check_shapes
-from numpy.typing import NDArray
 
 
-class Decoder(Block):
-    def __init__(self: Decoder, embedding: Embedding | None = None) -> None:
+class OneHotMaker(Block):
+    def __init__(self: OneHotMaker, embedding: Embedding | None = None) -> None:
         if embedding is None:
             super().__init__()
             return
@@ -35,10 +34,7 @@ class Decoder(Block):
         else:
             raise ValueError
 
-    def set_input_shape(self: Decoder, input_shape: tuple) -> tuple:
+    def set_input_shape(self: OneHotMaker, input_shape: tuple) -> tuple:
         if not check_shapes(input_shape, self.input_shape):
             raise ValueError("mismatch in input shapes:", input_shape, self.input_shape)
         return self.output_shape
-    
-    # def backprop(self: Decoder, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
-    #     return self.layers[0].W.T @ gradient

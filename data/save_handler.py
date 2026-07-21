@@ -17,10 +17,12 @@ from core import (
     Embedding,
     Recurrent,
     LSTM,
-    Decoder,
+    OneHotMaker,
     MLP,
     CNN,
     LSTMNetwork,
+    Adder,
+    Multiplier,
 )
 import os
 import struct
@@ -48,7 +50,9 @@ layer_types = {
     "Embedding": Embedding,
     "Recurrent": Recurrent,
     "LSTM": LSTM,
-    "Decoder": Decoder,
+    "OneHotMaker": OneHotMaker,
+    "Adder": Adder,
+    "Multiplier": Multiplier,
 }
 
 

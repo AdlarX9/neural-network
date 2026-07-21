@@ -18,10 +18,10 @@ class BN(Layer):
         C, _, _ = input_shape
         self.gamma = np.ones(C)
         self.beta = np.zeros(C)
-        return input_shape
+        self.output_shape = input_shape
+        return self.output_shape
 
     def feed_forward(self: BN, entry: NDArray[np.float64]) -> NDArray[np.float64]:
-        C, H, W = entry.shape
         # moyenne par canal
         self.mean = np.mean(entry, axis=(1, 2), keepdims=True)
         # variance par canal
