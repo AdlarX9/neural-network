@@ -1,9 +1,9 @@
 from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
-from .layer import Layer
-from .exit import ExitLoss
-from .block import Block
+from ..layer.layer import Layer
+from ..exit.exit_loss import ExitLoss
+from ..block.block import Block
 from graphics import ConsoleVisualization
 
 

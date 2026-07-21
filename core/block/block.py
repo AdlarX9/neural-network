@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .layer import Layer
+from ..layer.layer import Layer
 import numpy as np
 from numpy.typing import NDArray
 
@@ -64,6 +64,7 @@ class Block(Layer):
         del int_list[:len_output_shape]
         self.lr = float_list.pop(0)
         len_layers = int_list.pop(0)
+        self.layers = []
         for _ in range(len_layers):
             class_name = string_list.pop(0)
             len_sub_int = int_list.pop(0)

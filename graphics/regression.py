@@ -15,7 +15,8 @@ def regression(
     network: Network,
     teacher: Callable,
 ) -> None:
-    if network.get_dimensions() != ((2, 1), (1, 1)):
+    network_dimensions = network.get_dimensions()
+    if network_dimensions[0][0] != 2 or network_dimensions[1][0] != 1:
         return
 
     root = tk.Tk()

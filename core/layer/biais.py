@@ -12,7 +12,7 @@ class Biais(Layer):
     def set_input_shape(self: Biais, input_shape: tuple[int, int]) -> tuple[int, int]:
         self.input_shape = input_shape
         self.B = np.random.normal(0, np.sqrt(2 / input_shape[0]), size=(input_shape[0], 1))  # He
-        return (input_shape[0], 1)
+        return input_shape
 
     def feed_forward(self: Biais, entry: NDArray[np.float64]) -> NDArray[np.float64]:
         return entry + self.B

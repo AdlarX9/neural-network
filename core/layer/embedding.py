@@ -2,8 +2,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 from .layer import Layer
-from .tokenizer import Tokenizer
-from .functions import softmax
+from ..utils.tokenizer import Tokenizer
+from ..utils.functions import softmax
 from graphics import ConsoleVisualization
 import math
 

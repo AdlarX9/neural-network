@@ -4,19 +4,7 @@
 
 This program showcases a general *neural network* built **from scratch**, and exposes by default several scripts showing off *incredible performances* in **word prediction**, **number recognition** and **shape learning**.
 
-This project is built *as a library*, which offers different objects that allow you to build **whatever AI system that you want**. To make your own **custom model**, you just have to specify which *layers* you want, you can choose **from a variety of layers**, that are (*non exhaustive*):
-
-- **Fully connected** *layer* (**FC**)
-- **Biais** *layer*
-- **ReLU** *layer*
-- **Convolutional** *layer*
-- **Pool** *layer*
-- **ResNet** *layer*
-- **Embedding** *layer*
-- **LSTM** *layer*
-- **Decoder** *layer*  
-
-*and more*
+This project is built *as a library*, which offers different objects that allow you to build **whatever AI system that you want**. To make your own **custom model**, you just have to specify which *layers* you want, you can choose **from a variety of layers and pre-architectured networks**.
 
 To learn **how to use it** and create **your own AI tools**, just check out the default scripts *provided* in the `/scripts` directory.
 

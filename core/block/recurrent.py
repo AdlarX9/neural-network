@@ -1,7 +1,7 @@
 from __future__ import annotations
-from .layer import Layer
+from ..layer.layer import Layer
 from .block import Block
-from .lstm import LSTM
+from ..layer.lstm import LSTM
 import numpy as np
 from numpy.typing import NDArray
 

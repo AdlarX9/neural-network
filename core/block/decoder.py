@@ -1,10 +1,10 @@
 from __future__ import annotations
 import numpy as np
 from .block import Block
-from .fc import FC
-from .biais import Biais
-from .embedding import Embedding
-from .layer import check_shapes
+from ..layer.fc import FC
+from ..layer.biais import Biais
+from ..layer.embedding import Embedding
+from ..layer.layer import check_shapes
 from numpy.typing import NDArray
 
 

@@ -1,7 +1,7 @@
 from core import (
     FC,
     ExitLoss,
-    Network,
+    MLP,
     Layer,
     Biais,
     ReLU,
@@ -28,39 +28,18 @@ def shape_learning() -> None:
             data.append((np.array([[x], [y]]), np.array([[curve(x, y)]])))
         return data
 
-    layers: list[Layer] = [
-        FC(40),
-        Biais(),
-        ReLU(),
-        FC(40),
-        Biais(),
-        ReLU(),
-        FC(40),
-        Biais(),
-        ReLU(),
-        FC(40),
-        Biais(),
-        ReLU(),
-        FC(40),
-        Biais(),
-        ReLU(),
-        FC(40),
-        Biais(),
-        ReLU(),
-        FC(1),
-        Biais(),
-    ]
-    network = Network(layers=layers, exit_loss=ExitLoss(), input_shape=(2, 1), lr=0.0001)
+    neuron_numbers = [2, 40, 40, 40, 40, 40, 40, 1]
+    mlp = MLP(neuron_numbers)
 
     save_handler = SaveHandler()
-    name = "reproduce_shape"
+    name = "shape_learning"
     if save_handler.has(name):
-        network = save_handler.load(name)
-        if not isinstance(network, Network):
+        mlp = save_handler.load(name)
+        if not isinstance(mlp, MLP):
             raise MemoryError
 
-    batch = 1000
+    batch = 100
     data = get_data(batch)
-    network.train(data=data, batch=batch)
-    save_handler.save(network, name)
-    regression(network, curve)
+    mlp.train(data=data, batch=batch)
+    save_handler.save(mlp, name)
+    regression(mlp, curve)

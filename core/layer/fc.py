@@ -13,10 +13,11 @@ class FC(Layer):
 
     def set_input_shape(self: FC, input_shape: tuple[int, int]) -> tuple[int, int]:
         self.input_shape = input_shape
-        p, _ = input_shape
+        p, q = input_shape
         self.p = p
         self.W = np.random.normal(0, np.sqrt(2 / self.n), size=(self.n, p))  # He
-        return (self.n, 1)
+        self.output_shape = (self.n, q)
+        return self.output_shape
 
     def feed_forward(self: FC, entry: NDArray[np.float64]) -> NDArray[np.float64]:
         return self.W @ entry

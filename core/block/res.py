@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .block import Block
-from .layer import Layer
+from ..layer.layer import Layer
 import numpy as np
 from numpy.typing import NDArray
 

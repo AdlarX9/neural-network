@@ -18,6 +18,9 @@ from core import (
     Recurrent,
     LSTM,
     Decoder,
+    MLP,
+    CNN,
+    LSTMNetwork,
 )
 import os
 import struct
@@ -36,6 +39,9 @@ layer_types = {
     "ExitLoss": ExitLoss,
     "ProbaExit": ProbaExit,
     "Network": Network,
+    "MLP": MLP,
+    "CNN": CNN,
+    "LSTMNetwork": LSTMNetwork,
     "BN": BN,
     "Pool": Pool,
     "Res": Res,
