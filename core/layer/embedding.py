@@ -2,19 +2,19 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 from .layer import Layer
-from ..utils.tokenizer import Tokenizer
+from ..utils.word_manipulator import WordManipulator
 from ..utils.functions import softmax
 from graphics import ConsoleVisualization
 import math
 
 
-class Embedding(Layer):
+class Embedding(Layer, WordManipulator):
     def __init__(self: Embedding, dim: int = 100) -> None:
-        super().__init__()
-        self.dim = dim
-        self.W = np.array([[]])
-        self.W_prime = np.array([[]])
-        self.tokenizer = Tokenizer()
+        Layer.__init__(self)
+        WordManipulator.__init__(self)
+        self.dim: int = dim
+        self.W: NDArray[np.float64] = np.array([[]])
+        self.W_prime: NDArray[np.float64] = np.array([[]])
 
     def set_input_shape(self: Embedding, input_shape: tuple[int, int]) -> tuple[int, int]:
         if len(input_shape) != 2 or input_shape[0] != self.tokenizer.length():
@@ -62,7 +62,7 @@ class Embedding(Layer):
                 # Context vector
                 contexts = words[i - window : i] + words[i + 1 : i + window + 1]
                 one_hots = [self.tokenizer.get_one_hot(word) for word in contexts]
-                embedded_contexts = [
+                embedded_contexts: list[NDArray[np.float64]] = [
                     self.W[:, self.tokenizer.get_index(context)].reshape(-1, 1) for context in contexts
                 ]
                 embedded_context = sum(embedded_contexts) / len(embedded_contexts)
@@ -93,6 +93,10 @@ class Embedding(Layer):
                     sum(losses) / len(losses),
                     corrects.count(True) / len(corrects),
                 )
+
+    def build_vocab(self: Embedding, text: str):
+        self.tokenizer.build_vocab(text)
+        self.set_input_shape((self.tokenizer.length(), -1))
 
     def cosine_similarity(self: Embedding, a: NDArray[np.float64], b: NDArray[np.float64]) -> float:
         return float(np.dot(a.ravel(), b.ravel()) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12))

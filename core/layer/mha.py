@@ -3,6 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 from .layer import Layer
 import math
+from ..utils.functions import softmax
 
 
 def RoPE(x: NDArray[np.float64], factor: int = 1) -> NDArray[np.float64]:
@@ -17,13 +18,6 @@ def RoPE(x: NDArray[np.float64], factor: int = 1) -> NDArray[np.float64]:
     theta = omega @ positions
     theta = theta[None, :, :]
     return x * np.cos(factor * theta) + rotated * np.sin(factor * theta)
-
-
-def softmax(X: NDArray[np.float64]) -> NDArray[np.float64]:
-    X_max = np.max(X, axis=1, keepdims=True)
-    X_exp = np.exp(X - X_max)
-    Y = X_exp / np.sum(X_exp, axis=1, keepdims=True)
-    return Y
 
 
 class MHA(Layer):
@@ -46,14 +40,14 @@ class MHA(Layer):
 
     def set_input_shape(self: MHA, input_shape: tuple) -> tuple:
         super().set_input_shape(input_shape)
-        d, T = input_shape
+        d, _ = input_shape
         if int(d / self.H) != d / self.H:
             raise ValueError("Dimensions mismatch")
         self.d_h = d // self.H
-        self.Wq = np.random.normal(0, np.sqrt(2 / d), size=(self.H, self.d_h, T))  # He
-        self.Wk = np.random.normal(0, np.sqrt(2 / d), size=(self.H, self.d_h, T))  # He
-        self.Wv = np.random.normal(0, np.sqrt(2 / d), size=(self.H, self.d_h, T))  # He
-        self.Wo = np.random.normal(0, np.sqrt(2 / d), size=(d, T))  # He
+        self.Wq = np.random.normal(0, np.sqrt(2 / d), size=(self.H, self.d_h, d))  # He
+        self.Wk = np.random.normal(0, np.sqrt(2 / d), size=(self.H, self.d_h, d))  # He
+        self.Wv = np.random.normal(0, np.sqrt(2 / d), size=(self.H, self.d_h, d))  # He
+        self.Wo = np.random.normal(0, np.sqrt(2 / d), size=(d, d))  # He
         return self.output_shape
 
     def feed_forward(self: MHA, entry: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -69,22 +63,21 @@ class MHA(Layer):
         S = self.Q @ self.K / math.sqrt(self.d_h)
         mask = np.tril(np.full(S.shape, -np.inf), k=-1)
         S += mask
-        self.A = softmax(S)
+        self.A = softmax(S, axis=1)
         O = self.V @ self.A
 
-        self.concat = O.reshape(self.H * d, T)
+        self.concat = O.reshape(self.H * self.d_h, T)
         out = self.Wo @ self.concat
         return out
 
     def descend_gradient(self: MHA, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
         if self.input is None:
             raise MemoryError
-        d, T = self.input.shape
+        _, T = self.input.shape
 
         # Compute gradients
         d_concat = self.Wo.T @ gradient
-        self.Wo -= self.lr * gradient @ self.concat.T
-        d_O = d_concat.reshape(self.H, d, T)
+        d_O = d_concat.reshape(self.H, self.d_h, T)
         d_V = d_O @ self.A.swapaxes(1, 2)
         d_A = self.V.swapaxes(1, 2) @ d_O
         d_S: NDArray[np.float64] = self.A * (d_A - np.sum(d_A * self.A, axis=1, keepdims=True))
@@ -101,4 +94,33 @@ class MHA(Layer):
         self.Wq -= self.lr * d_Q @ self.input.T
         self.Wk -= self.lr * d_K @ self.input.T
         self.Wv -= self.lr * d_V @ self.input.T
+        self.Wo -= self.lr * gradient @ self.concat.T
         return d_X
+
+    def get_data(self: MHA) -> tuple[list[int], list[float], list[str]]:
+        int_list, float_list, str_list = super().get_data()
+        int_list += [self.H, self.d_h]
+        float_list += self.Wq.flatten().tolist()
+        float_list += self.Wk.flatten().tolist()
+        float_list += self.Wv.flatten().tolist()
+        float_list += self.Wo.flatten().tolist()
+        return int_list, float_list, str_list
+
+    def load_from_data(
+        self: MHA, int_list: list[int], float_list: list[float], string_list: list[str]
+    ) -> None:
+        self.input_shape = tuple(int_list[:2])
+        del int_list[:2]
+        self.lr = float_list.pop(0)
+        self.H = int_list.pop(0)
+        self.d_h = int_list.pop(0)
+        d = self.input_shape[0]
+
+        self.Wq = np.array(float_list[: self.H * self.d_h * d]).reshape((self.H, self.d_h, d))
+        del float_list[: self.H * self.d_h * d]
+        self.Wk = np.array(float_list[: self.H * self.d_h * d]).reshape((self.H, self.d_h, d))
+        del float_list[: self.H * self.d_h * d]
+        self.Wv = np.array(float_list[: self.H * self.d_h * d]).reshape((self.H, self.d_h, d))
+        del float_list[: self.H * self.d_h * d]
+        self.Wo = np.array(float_list[: d**2]).reshape((d, d))
+        del float_list[: d**2]

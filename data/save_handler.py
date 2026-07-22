@@ -1,34 +1,5 @@
 from __future__ import annotations
-from core import (
-    Network,
-    Layer,
-    Conv,
-    FC,
-    Biais,
-    ConvBiais,
-    ReLU,
-    Flatten,
-    ExitLoss,
-    ProbaExit,
-    Block,
-    BN,
-    MaxPooling,
-    Res,
-    Embedding,
-    Recurrent,
-    LSTM,
-    OneHotMaker,
-    MLP,
-    CNN,
-    LSTMNetwork,
-    Adder,
-    Multiplier,
-    Activation,
-    GlobalAveragePooling,
-    SiLU,
-    SwiGLU,
-    MHA,
-)
+import core
 import os
 import struct
 from io import BufferedWriter, BufferedReader
@@ -36,33 +7,38 @@ from typing import Any
 from pathlib import Path
 
 layer_types = {
-    "Layer": Layer,
-    "Conv": Conv,
-    "FC": FC,
-    "Biais": Biais,
-    "ConvBiais": ConvBiais,
-    "ReLU": ReLU,
-    "Flatten": Flatten,
-    "ExitLoss": ExitLoss,
-    "ProbaExit": ProbaExit,
-    "Network": Network,
-    "MLP": MLP,
-    "CNN": CNN,
-    "LSTMNetwork": LSTMNetwork,
-    "BN": BN,
-    "MaxPooling": MaxPooling,
-    "Res": Res,
-    "Embedding": Embedding,
-    "Recurrent": Recurrent,
-    "LSTM": LSTM,
-    "OneHotMaker": OneHotMaker,
-    "Adder": Adder,
-    "Multiplier": Multiplier,
-    "Activation": Activation,
-    "GlobalAveragePooling": GlobalAveragePooling,
-    "SiLU": SiLU,
-    "SwiGLU": SwiGLU,
-    "MHA": MHA,
+    "Layer": core.Layer,
+    "Conv": core.Conv,
+    "FC": core.FC,
+    "Biais": core.Biais,
+    "ConvBiais": core.ConvBiais,
+    "ReLU": core.ReLU,
+    "Flatten": core.Flatten,
+    "ExitLoss": core.ExitLoss,
+    "ProbaExit": core.ProbaExit,
+    "Network": core.Network,
+    "MLP": core.MLP,
+    "CNN": core.CNN,
+    "LSTMNetwork": core.LSTMNetwork,
+    "BN": core.BN,
+    "MaxPooling": core.MaxPooling,
+    "Res": core.Res,
+    "Embedding": core.Embedding,
+    "Recurrent": core.Recurrent,
+    "LSTM": core.LSTM,
+    "OneHotMaker": core.OneHotMaker,
+    "Adder": core.Adder,
+    "Multiplier": core.Multiplier,
+    "Activation": core.Activation,
+    "GlobalAveragePooling": core.GlobalAveragePooling,
+    "SiLU": core.SiLU,
+    "SwiGLU": core.SwiGLU,
+    "MHA": core.MHA,
+    "TransformerBlock": core.TransformerBlock,
+    "Linear": core.Linear,
+    "GPT": core.GPT,
+    "Block": core.Block,
+    "RMSNorm": core.RMSNorm,
 }
 
 
@@ -125,31 +101,31 @@ class SaveHandler:
             string_list.append(string)
         return string_list
 
-    def write_layer(self: SaveHandler, f: BufferedWriter, layer: Layer) -> None:
+    def write_layer(self: SaveHandler, f: BufferedWriter, layer: core.Layer) -> None:
         self.write_string(f, layer.__class__.__name__)
         int_list, float_list, string_list = layer.get_data()
         self.write_list(f, int_list, "i")
         self.write_list(f, float_list, "f")
         self.write_string_list(f, string_list)
 
-    def read_layer(self: SaveHandler, f: BufferedReader) -> Layer:
+    def read_layer(self: SaveHandler, f: BufferedReader) -> core.Layer:
         layer_type = self.read_string(f)
         int_list = self.read_list(f, "i")
         float_list = self.read_list(f, "f")
         string_list = self.read_string_list(f)
-        new_layer: Layer = layer_types[layer_type]()
-        if isinstance(new_layer, Block):
+        new_layer: core.Layer = layer_types[layer_type]()
+        if isinstance(new_layer, core.Block):
             new_layer.load_from_data(int_list, float_list, string_list, layer_types)
         else:
             new_layer.load_from_data(int_list, float_list, string_list)
         return new_layer
 
-    def save(self: SaveHandler, layer: Layer, name: str) -> None:
+    def save(self: SaveHandler, layer: core.Layer, name: str) -> None:
         path = self.get_path(name)
         with open(path, "wb") as f:
             self.write_layer(f, layer)
 
-    def load(self: SaveHandler, name: str) -> Layer:
+    def load(self: SaveHandler, name: str) -> core.Layer:
         path = self.get_path(name)
         with open(path, "rb") as f:
             layer = self.read_layer(f)

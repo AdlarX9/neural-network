@@ -2,17 +2,22 @@ from .network.network import Network
 from .network.mlp import MLP
 from .network.cnn import CNN
 from .network.lstm import LSTMNetwork
+from .network.gpt import GPT
+from .block.transformer import TransformerBlock
 from .block.swiglu import SwiGLU
 from .layer.mha import MHA
 from .block.one_hot_maker import OneHotMaker
 from .layer.embedding import Embedding
+from .network.word_network import WordNetwork
 from .utils.tokenizer import Tokenizer, normalize
 from .activation.silu import SiLU
 from .activation.relu import ReLU
 from .activation.activation import Activation
 from .transform.bn import BN
 from .transform.max_pooling import MaxPooling
-from .layer.biais import Biais, ConvBiais
+from .block.linear import Linear
+from .layer.biais import Biais
+from .layer.conv_biais import ConvBiais
 from .layer.conv import Conv
 from .layer.fc import FC
 from .transform.flatten import Flatten
@@ -24,5 +29,6 @@ from .block.recurrent import Recurrent
 from .layer.lstm import LSTM
 from .block.adder import Adder
 from .block.multiplier import Multiplier
+from .transform.rms_norm import RMSNorm
 from .block.block import Block
 from .layer.layer import Layer, check_shapes

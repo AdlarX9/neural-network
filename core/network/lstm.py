@@ -1,15 +1,13 @@
 from __future__ import annotations
 from core.exit.exit_loss import ExitLoss
-from .network import Network
+from .word_network import WordNetwork
 from ..block.recurrent import Recurrent
 from ..block.one_hot_maker import OneHotMaker
 from ..layer.embedding import Embedding
 from ..layer.lstm import LSTM
-from ..utils.tokenizer import Tokenizer
-import numpy as np
 
 
-class LSTMNetwork(Network):
+class LSTMNetwork(WordNetwork):
     def __init__(
         self: LSTMNetwork,
         embedding: Embedding | None = None,
@@ -24,18 +22,10 @@ class LSTMNetwork(Network):
         super().__init__(layers=layers, input_shape=input_shape, lr=lr, exit_loss=exit_loss)
 
     def predict_next_word(self: LSTMNetwork, beginning: list[str]) -> str:
-        tokenizer = Tokenizer()
-        one_hot_sentence = None
-        for word in beginning:
-            if one_hot_sentence is None:
-                one_hot_sentence = tokenizer.get_one_hot(word).reshape(-1, 1)
-            else:
-                one_hot_sentence = np.hstack((one_hot_sentence, tokenizer.get_one_hot(word).reshape(-1, 1)))
-        if one_hot_sentence is None:
-            raise ValueError
         for layer in self.layers:
             if isinstance(layer, Recurrent):
                 layer.reset_data()
-        one_hot_prediction = self.compute(one_hot_sentence)
-        prediction = tokenizer.get_word(int(np.argmax(one_hot_prediction)))
-        return prediction
+        one_hot_beginning = self.get_one_hot(beginning)
+        one_hot_prediction = self.compute(one_hot_beginning)
+        prediction = self.get_words(one_hot_prediction)
+        return prediction[0]

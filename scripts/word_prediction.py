@@ -1,101 +1,53 @@
-from core import LSTMNetwork, ProbaExit, Tokenizer, Embedding
-from data import SaveHandler
+from core import LSTMNetwork, ProbaExit, Embedding
 import numpy as np
 from numpy.typing import NDArray
 
 sample: str = str(
     "roi duc duchesse prince princesse bisous amour mariage lit dormir repos travail etat salaire argent"
 )
-embedding_name: str = str("embedding")
-lstm_name: str = str("lstm")
-sentence: str = str("roi duc duchesse")
 
 
-def get_embedding(name: str) -> tuple[Embedding, bool]:
-    tokenizer = Tokenizer()
-    new_one = False
-
-    # Handle save
-    save_handler = SaveHandler()
-    if save_handler.has(name):
-        embedding = save_handler.load(name)
-        if not isinstance(embedding, Embedding):
-            raise MemoryError
-        return embedding, new_one
-    else:
-        # Build Tokenizer vocab
-        text_for_vocab = sample
-        tokenizer.build_vocab(text_for_vocab)
-
-        # Build default Embedding
-        embedding = Embedding(3)
-        embedding.set_input_shape((tokenizer.length(), -1))
-        save_handler.save(embedding, name)
-        new_one = True
-        return embedding, new_one
-
-
-def train_embedding(embedding: Embedding) -> None:
-    embedding.set_lr(0.1)
-    text = sample
-    embedding.cbow_training(text, window=2, batch=400_000)
-    SaveHandler().save(embedding, embedding_name)
-
-
-def get_lstm(embedding: Embedding) -> LSTMNetwork:
-    save_handler = SaveHandler()
-    if save_handler.has(lstm_name):
-        network = save_handler.load(lstm_name)
-        if not isinstance(network, LSTMNetwork):
-            raise MemoryError
-        return network
-    else:
-        network = LSTMNetwork(embedding=embedding, exit_loss=ProbaExit(), lr=0.05)
-        save_handler.save(network, lstm_name)
-        return network
-
-
-def build_data(embedding: Embedding) -> list[tuple[NDArray[np.float64], NDArray[np.float64]]]:
-    context = 4
+def build_data(context: int = 1) -> list[tuple[list[str], list[str]]]:
     text = sample
     words = text.split(" ")
-    data: list[tuple[NDArray[np.float64], NDArray[np.float64]]] = []
+    data: list[tuple[list[str], list[str]]] = []
     for i in range(len(words) - context):
-        entry = None
-        for j in range(context):
-            word = words[i + j]
-            one_hot = embedding.tokenizer.get_one_hot(word).reshape(-1, 1)
-            if entry is None:
-                entry = one_hot
-            else:
-                entry = np.hstack((entry, one_hot))
-        answer = embedding.tokenizer.get_one_hot(words[i + context]).reshape(-1, 1)
-        if entry is None:
-            raise ValueError
+        entry = words[i : i + context]
+        answer = [words[i + context]]
         data.append((entry, answer))
     return data
 
 
 def word_prediction() -> None:
     # Build Embedding
-    embedding, new = get_embedding(embedding_name)
-    if new:
-        train_embedding(embedding)
+    embedding = Embedding(4)
+    embedding_name = "embedding"
+    if not embedding.load(embedding_name):
+        embedding.build_vocab(sample)
+        embedding.set_lr(0.1)
+        embedding.cbow_training(sample, window=2, batch=40_000)
+        embedding.save(embedding_name)
 
     # Build LSTM
-    save_handler = SaveHandler()
-    lstm = get_lstm(embedding)
-    data = build_data(embedding)
-    lstm.train(data=data, batch=30_000)
-    save_handler.save(lstm, lstm_name)
+    context = 3
+    lstm_name = "lstm"
+    lstm = LSTMNetwork(embedding=embedding, exit_loss=ProbaExit(), lr=0.05)
+    lstm.load(lstm_name)
+    data = build_data(context)
+    lstm.train_words(data=data, batch=2_000)
+    lstm.save(lstm_name)
 
     # Predict words
     number: int = 12
-    words = sentence.split(" ")
+    words = sample.split(" ")[:context]
     predictions: list[str] = []
     for _ in range(number):
         prediction = lstm.predict_next_word(words)
         words.append(prediction)
         words.pop(0)
         predictions.append(prediction)
-    print(sentence, "|", " ".join(predictions))
+
+    print("Trained on:")
+    print(sample)
+    print("And generated:")
+    print(" ".join(sample.split(" ")[:context]), "|", " ".join(predictions))

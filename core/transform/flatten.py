@@ -6,7 +6,7 @@ from ..layer.layer import Layer
 
 class Flatten(Layer):
     def __init__(self: Flatten) -> None:
-        return
+        super().__init__()
 
     def set_input_shape(self: Flatten, input_shape: tuple[int, int, int]) -> tuple[int, int]:
         self.input_shape = input_shape

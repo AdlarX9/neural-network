@@ -25,13 +25,20 @@ class Multiplier(Block):
         return self.output_shape
 
     def compute(self: Multiplier, entry: NDArray[np.float64], memorize: bool) -> NDArray[np.float64]:
-        output = np.ones(self.output_shape)
+        output = None
         self.outputs = []
+        if memorize:
+            self.input = entry
         for layer in self.layers:
             result = layer.compute(entry, memorize)
             if memorize:
                 self.outputs.append(result)
-            output *= result
+            if output is None:
+                output = result
+            else:
+                output *= result
+        if output is None:
+            raise ValueError
         return output
 
     def backprop(self: Multiplier, gradient: NDArray[np.float64]) -> NDArray[np.float64]:

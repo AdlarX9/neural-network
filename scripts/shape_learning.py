@@ -1,5 +1,4 @@
 from core import MLP
-from data import SaveHandler
 from graphics import regression
 import numpy as np
 from numpy.typing import NDArray
@@ -23,16 +22,11 @@ def shape_learning() -> None:
 
     neuron_numbers = [2, 40, 40, 40, 40, 40, 40, 1]
     mlp = MLP(neuron_numbers)
-
-    save_handler = SaveHandler()
     name = "shape_learning"
-    if save_handler.has(name):
-        mlp = save_handler.load(name)
-        if not isinstance(mlp, MLP):
-            raise MemoryError
+    mlp.load(name)
 
     batch = 1000
     data = get_data(batch)
     mlp.train(data=data, batch=batch)
-    save_handler.save(mlp, name)
+    mlp.save(name)
     regression(mlp, curve)

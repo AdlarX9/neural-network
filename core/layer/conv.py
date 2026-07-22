@@ -97,7 +97,7 @@ class Conv(Layer):
         return col2im(dXcol, self.input.shape, self.K, self.S, self.P)
 
     def get_data(self: Conv) -> tuple[list[int], list[float], list[str]]:
-        int_list = list(self.input_shape) + [self.K, self.S, self.N]
+        int_list = list(self.input_shape) + [self.K, self.S, self.N, self.P]
         float_list = [self.lr]
         float_list += self.kernels.flatten().tolist()
         return int_list, float_list, []
@@ -109,6 +109,7 @@ class Conv(Layer):
         self.K = int_list[3]
         self.S = int_list[4]
         self.N = int_list[5]
+        self.P = int_list[6]
         self.lr = float_list[0]
         del float_list[0]
         self.kernels = np.array(float_list).reshape(self.N, self.input_shape[0], self.K, self.K)

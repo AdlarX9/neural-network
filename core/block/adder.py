@@ -26,6 +26,8 @@ class Adder(Block):
 
     def compute(self: Adder, entry: NDArray[np.float64], memorize: bool) -> NDArray[np.float64]:
         output = None
+        if memorize:
+            self.input = entry
         for layer in self.layers:
             if output is None:
                 output = layer.compute(entry, memorize)

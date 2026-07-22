@@ -12,4 +12,5 @@ class SwiGLU(Block):
     def set_input_shape(self: SwiGLU, input_shape: tuple) -> tuple:
         n, _ = input_shape
         self.layers = [Multiplier(Block(FC(n), SiLU(), FC(n)), FC(n))]
+        self.set_lr(self.lr)
         return super().set_input_shape(input_shape)

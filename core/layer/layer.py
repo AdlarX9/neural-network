@@ -59,3 +59,21 @@ class Layer:
     ) -> None:
         self.input_shape = tuple(int_list)
         self.lr = float_list[0]
+
+    def save(self: Layer, name: str) -> None:
+        from data import SaveHandler
+
+        SaveHandler().save(self, name)
+
+    def load(self: Layer, name: str) -> bool:
+        from data import SaveHandler
+
+        handler = SaveHandler()
+        if not handler.has(name):
+            return False
+        layer = handler.load(name)
+        if not isinstance(layer, self.__class__):
+            raise TypeError(f"Expected {self.__class__.__name__}, " f"got {layer.__class__.__name__}")
+        self.__dict__.clear()
+        self.__dict__.update(layer.__dict__)
+        return True

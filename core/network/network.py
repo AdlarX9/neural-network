@@ -25,13 +25,20 @@ class Network(Block):
         volume = self.exit_loss.feed_forward(volume)
         return volume
 
+    def accuracy(self: Network, prediction: NDArray[np.float64], answer: NDArray[np.float64]) -> float:
+        is_correct = []
+        _, p = prediction.shape
+        for i in range(p):
+            is_correct.append(bool(np.argmax(prediction[:, i]) == np.argmax(answer[:, i])))
+        return is_correct.count(True) / len(is_correct)
+
     def single_train(
         self: Network, entry: NDArray[np.float64], answer: NDArray[np.float64]
-    ) -> tuple[float, bool]:
+    ) -> tuple[float, float]:
         prediction = self.compute(entry, memorize=True)
         loss = self.exit_loss.get_loss(prediction, answer)
         gradient = self.exit_loss.get_gradient(prediction, answer)
-        correct = bool(np.argmax(prediction) == np.argmax(answer))
+        correct = self.accuracy(prediction, answer)
         super().backprop(gradient)
         return loss, correct
 
@@ -43,16 +50,21 @@ class Network(Block):
     ) -> None:
         dashboard = visualization if visualization is not None else ConsoleVisualization(batch, len(data))
         try:
-            seen_items = 0
-            correct_items = 0
+            max_remember = 600
+            correct_items: list[float] = []
+            losses: list[float] = []
             for batch_index in range(1, batch + 1):
                 for item_index, el in enumerate(data, start=1):
                     loss, is_correct = self.single_train(el[0], el[1])
-                    seen_items += 1
-                    if is_correct:
-                        correct_items += 1
-                    accuracy = correct_items / seen_items if seen_items else 0.0
-                    dashboard.update(batch_index, item_index, loss, accuracy)
+                    correct_items.append(is_correct)
+                    losses.append(loss)
+                    if len(correct_items) > max_remember:
+                        correct_items.pop(0)
+                    if len(losses) > max_remember:
+                        losses.pop(0)
+                    accuracy = sum(correct_items) / len(correct_items) if len(correct_items) else 0.0
+                    average_loss = sum(losses) / len(losses) if len(losses) else -1.0
+                    dashboard.update(batch_index, item_index, average_loss, accuracy)
         finally:
             if visualization is None:
                 dashboard.close()
