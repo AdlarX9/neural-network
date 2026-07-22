@@ -2,16 +2,16 @@ from __future__ import annotations
 import math
 import numpy as np
 from numpy.typing import NDArray
-from .layer import Layer
+from ..layer.layer import Layer
 
 
-class Pool(Layer):
-    def __init__(self, dim: int) -> None:
+class MaxPooling(Layer):
+    def __init__(self: MaxPooling, dim: int) -> None:
         super().__init__()
         self.dim = dim
         self._max_pos: NDArray[np.int64] | None = None  # positions des max dans chaque fenêtre
 
-    def feed_forward(self, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: MaxPooling, entry: NDArray[np.float64]) -> NDArray[np.float64]:
         c, n, p = entry.shape
         d = self.dim
 
@@ -37,7 +37,7 @@ class Pool(Layer):
         out = np.max(flat, axis=-1)  # (c, out_h, out_w)
         return out
 
-    def descend_gradient(self, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def descend_gradient(self: MaxPooling, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
         if self.input is None or self._max_pos is None:
             raise MemoryError("feed_forward must be called before descend_gradient")
 
@@ -68,13 +68,13 @@ class Pool(Layer):
 
         return grad_padded
 
-    def get_data(self: Pool) -> tuple[list[int], list[float], list[str]]:
+    def get_data(self: MaxPooling) -> tuple[list[int], list[float], list[str]]:
         int_list, float_list, string_list = super().get_data()
         int_list.append(self.dim)
         return int_list, float_list, string_list
 
     def load_from_data(
-        self: Pool, int_list: list[int], float_list: list[float], string_list: list[str]
+        self: MaxPooling, int_list: list[int], float_list: list[float], string_list: list[str]
     ) -> None:
         self.dim = int_list.pop(-1)
         super().load_from_data(int_list, float_list, string_list)

@@ -2,16 +2,21 @@ from .network.network import Network
 from .network.mlp import MLP
 from .network.cnn import CNN
 from .network.lstm import LSTMNetwork
+from .block.swiglu import SwiGLU
+from .layer.mha import MHA
 from .block.one_hot_maker import OneHotMaker
 from .layer.embedding import Embedding
 from .utils.tokenizer import Tokenizer, normalize
-from .layer.activation import ReLU, SiLU
-from .layer.bn import BN
-from .layer.pool import Pool
+from .activation.silu import SiLU
+from .activation.relu import ReLU
+from .activation.activation import Activation
+from .transform.bn import BN
+from .transform.max_pooling import MaxPooling
 from .layer.biais import Biais, ConvBiais
 from .layer.conv import Conv
 from .layer.fc import FC
-from .layer.flatten import Flatten, AverageFlatten
+from .transform.flatten import Flatten
+from .transform.global_average_pooling import GlobalAveragePooling
 from .exit.proba_exit import ProbaExit
 from .exit.exit_loss import ExitLoss
 from .block.res import Res

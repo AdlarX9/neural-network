@@ -1,9 +1,9 @@
 from __future__ import annotations
-from core.exit.exit_loss import ExitLoss
-from core.layer.conv import Conv
-from core.layer.biais import ConvBiais
-from core.layer.activation import ReLU
-from core.layer.flatten import Flatten
+from ..exit.exit_loss import ExitLoss
+from ..layer.conv import Conv
+from ..layer.biais import ConvBiais
+from ..activation.relu import ReLU
+from ..transform.flatten import Flatten
 from .mlp import MLP
 from .network import Network
 
@@ -11,7 +11,7 @@ from .network import Network
 class CNN(Network):
     def __init__(
         self: CNN,
-        parameters: tuple[list[tuple[int, int, int]], list[int]] = ([(1, 1, 1), (1, 1, 1)], [1]),
+        parameters: tuple[list[tuple[int, int, int, int]], list[int]] = ([(1, 1, 1, 1), (1, 1, 1, 1)], [1]),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
     ) -> None:
@@ -19,12 +19,12 @@ class CNN(Network):
         mlp_params = parameters[1]
         if len(cnn_params) < 2:
             raise ValueError("Not enough layers:", parameters)
-        input_shape = cnn_params.pop(0)
+        input_shape = cnn_params.pop(0)[:3]
         layers = []
-        N, K, S = 0, 0, 0
+        N, K, S, P = 0, 0, 0, 0
         for cnn_param in cnn_params:
-            N, K, S = cnn_param
-            layers.append(Conv(N, K, S))
+            N, K, S, P = cnn_param
+            layers.append(Conv(N, K, S, P))
             layers.append(ConvBiais())
             layers.append(ReLU())
         layers.append(Flatten())

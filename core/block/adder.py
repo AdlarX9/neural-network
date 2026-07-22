@@ -25,13 +25,18 @@ class Adder(Block):
         return self.output_shape
 
     def compute(self: Adder, entry: NDArray[np.float64], memorize: bool) -> NDArray[np.float64]:
-        output = np.zeros(self.output_shape)
+        output = None
         for layer in self.layers:
-            output += layer.compute(entry, memorize)
+            if output is None:
+                output = layer.compute(entry, memorize)
+            else:
+                output += layer.compute(entry, memorize)
+        if output is None:
+            return np.zeros(self.output_shape)
         return output
 
     def backprop(self: Adder, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
-        new_gradient = np.zeros(self.input_shape)
+        new_gradient = np.zeros_like(self.input)
         for layer in self.layers:
             new_gradient += layer.backprop(gradient)
         return new_gradient

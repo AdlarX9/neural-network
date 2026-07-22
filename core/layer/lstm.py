@@ -138,11 +138,11 @@ class LSTM(Layer):
 
         # Compute new gradients
         self.gradient_h = (
-            self.Uf @ derivate_f + self.Ui @ derivate_i + self.Uo @ derivate_o + self.Uc @ derivate_c_prime
+            self.Uf.T @ derivate_f + self.Ui.T @ derivate_i + self.Uo.T @ derivate_o + self.Uc.T @ derivate_c_prime
         )
         self.gradient_c = dc * f
         new_gradient = (
-            self.Wf @ derivate_f + self.Wi @ derivate_i + self.Wo @ derivate_o + self.Wc @ derivate_c_prime
+            self.Wf.T @ derivate_f + self.Wi.T @ derivate_i + self.Wo.T @ derivate_o + self.Wc.T @ derivate_c_prime
         )
 
         # Learn weights

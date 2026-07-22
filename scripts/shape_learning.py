@@ -1,11 +1,4 @@
-from core import (
-    FC,
-    ExitLoss,
-    MLP,
-    Layer,
-    Biais,
-    ReLU,
-)
+from core import MLP
 from data import SaveHandler
 from graphics import regression
 import numpy as np
@@ -38,7 +31,7 @@ def shape_learning() -> None:
         if not isinstance(mlp, MLP):
             raise MemoryError
 
-    batch = 100
+    batch = 1000
     data = get_data(batch)
     mlp.train(data=data, batch=batch)
     save_handler.save(mlp, name)

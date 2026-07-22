@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .layer import Layer
+from ..layer.layer import Layer
 import numpy as np
 from numpy.typing import NDArray
 
@@ -36,11 +36,11 @@ class BN(Layer):
         _, H, W = gradient.shape
         m = H * W
 
-        self.gamma -= self.lr * np.sum(gradient * self.x_hat, axis=(1, 2))
-        self.beta -= self.lr * np.sum(gradient, axis=(1, 2))
-
         dx_hat = gradient * self.gamma[:, None, None]
         sum_dxhat = np.sum(dx_hat, axis=(1, 2), keepdims=True)
         sum_dxhat_xhat = np.sum(dx_hat * self.x_hat, axis=(1, 2), keepdims=True)
         dx = 1 / np.sqrt(self.var + self.epsilon) * (dx_hat - sum_dxhat / m - self.x_hat * sum_dxhat_xhat / m)
+
+        self.gamma -= self.lr * np.sum(gradient * self.x_hat, axis=(1, 2))
+        self.beta -= self.lr * np.sum(gradient, axis=(1, 2))
         return dx

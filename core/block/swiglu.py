@@ -2,7 +2,7 @@ from __future__ import annotations
 from .block import Block
 from .multiplier import Multiplier
 from ..layer.fc import FC
-from ..layer.activation import SiLU
+from ..activation.silu import SiLU
 
 
 class SwiGLU(Block):

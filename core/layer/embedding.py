@@ -17,7 +17,7 @@ class Embedding(Layer):
         self.tokenizer = Tokenizer()
 
     def set_input_shape(self: Embedding, input_shape: tuple[int, int]) -> tuple[int, int]:
-        if len(input_shape) != 2 and input_shape[0] != self.tokenizer.length():
+        if len(input_shape) != 2 or input_shape[0] != self.tokenizer.length():
             raise ValueError(
                 "Expected dimension does not fit Tokenizer requiremenents:",
                 (self.tokenizer.length(), 1),
@@ -28,12 +28,12 @@ class Embedding(Layer):
         self.W = np.random.normal(
             -1 / np.sqrt(self.dim),
             1 / np.sqrt(self.dim),
-            (self.dim, Tokenizer().length()),
+            (self.dim, self.tokenizer.length()),
         )
         self.W_prime = np.random.normal(
             -1 / np.sqrt(self.dim),
             1 / np.sqrt(self.dim),
-            (Tokenizer().length(), self.dim),
+            (self.tokenizer.length(), self.dim),
         )
         self.output_shape = (self.dim, self.input_shape[1])
         return self.output_shape
@@ -58,7 +58,6 @@ class Embedding(Layer):
             for i in range(window, len(words) - window):
                 target = words[i]
                 target_index = self.tokenizer.get_index(target)
-                answer = self.tokenizer.get_one_hot(target)
 
                 # Context vector
                 contexts = words[i - window : i] + words[i + 1 : i + window + 1]
@@ -73,13 +72,14 @@ class Embedding(Layer):
                 probability = softmax(score)
 
                 # Learn
-                gradient = probability - answer
+                gradient = probability.copy()
+                gradient[target_index, 0] -= 1
                 new_gradient = self.W_prime.T @ gradient
                 self.W_prime -= self.lr * gradient @ embedded_context.T  # type: ignore
                 self.W -= self.lr * new_gradient @ sum(one_hots).T / (2 * window)  # type: ignore
 
                 # Dashboard
-                correct = bool(np.argmax(probability) == np.argmax(answer))
+                correct = bool(np.argmax(probability) == target_index)
                 corrects.append(correct)
                 if len(corrects) > max_length:
                     corrects.pop(0)
@@ -93,40 +93,6 @@ class Embedding(Layer):
                     sum(losses) / len(losses),
                     corrects.count(True) / len(corrects),
                 )
-
-    def custom_training(self: Embedding, text: str, window: int = 3, batch: int = 10):
-        K = 1e-8
-        words = self.tokenizer.split_text(text)
-        word_counts = np.zeros((self.tokenizer.length()))
-        for word in words:
-            word_counts[self.tokenizer.get_index(word)] += 1
-        word_freq = word_counts / len(words)
-        for batch_index in range(1, batch + 1):
-            for i in range(window, len(words) - window):
-                center = words[i]
-                center_idx = self.tokenizer.get_index(center)
-                center_freq = word_freq[center_idx]
-                embedded_center = self.W[:, center_idx]
-                all_indices = set([i for i in range(self.tokenizer.length())])
-                all_indices.remove(center_idx)
-                for j in range(-window, window + 1):
-                    if j == 0:
-                        continue
-                    context_word = words[i - j]
-                    context_idx = self.tokenizer.get_index(context_word)
-                    all_indices.remove(context_idx)
-                    embedded_context = self.W[:, context_idx]
-                    cosine = self.cosine_similarity(embedded_context, embedded_center)
-                    force = K / (center_freq * word_freq[context_idx] * j ** 2 + 1e-12) * (1 - cosine)
-                    correction = (embedded_center - embedded_context)
-                    correction /= np.linalg.norm(correction)
-                    correction *= force
-                    self.W[:, context_idx] += self.lr * correction
-                opposite_force = embedded_center
-                opposite_force /= np.linalg.norm(opposite_force)
-                opposite_force *= 2 * K / (len(all_indices) * center_freq * window + 1e-12)
-                for index in all_indices:
-                    self.W[:, index] -= self.lr * opposite_force
 
     def cosine_similarity(self: Embedding, a: NDArray[np.float64], b: NDArray[np.float64]) -> float:
         return float(np.dot(a.ravel(), b.ravel()) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12))

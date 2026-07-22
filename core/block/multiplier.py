@@ -40,7 +40,7 @@ class Multiplier(Block):
         new_gradient = np.zeros(self.input.shape)
         for i in range(len(self.layers)):
             term = np.ones(self.input.shape)
-            for j in range(i):
+            for j in range(len(self.layers)):
                 if i != j:
                     term *= self.outputs[j]
             term *= self.layers[i].backprop(gradient)

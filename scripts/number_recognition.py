@@ -5,7 +5,7 @@ from graphics import view_numbers
 
 def number_recognition() -> None:
     cnn = CNN(
-        parameters=([(1, 28, 28), (32, 3, 2), (64, 3, 2), (128, 3, 2)], [10]), exit_loss=ProbaExit(), lr=0.005
+        parameters=([(1, 28, 28, 0), (32, 3, 2, -1), (64, 3, 2, -1), (128, 3, 2, -1)], [10]), exit_loss=ProbaExit(), lr=0.005
     )
 
     save_handler = SaveHandler()

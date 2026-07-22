@@ -2,7 +2,7 @@ from scripts import number_recognition, shape_learning, word_prediction
 
 
 def main() -> None:
-    word_prediction()
+    number_recognition()
 
 
 if __name__ == "__main__":

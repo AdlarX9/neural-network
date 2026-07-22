@@ -12,7 +12,7 @@ from core import (
     ProbaExit,
     Block,
     BN,
-    Pool,
+    MaxPooling,
     Res,
     Embedding,
     Recurrent,
@@ -23,6 +23,11 @@ from core import (
     LSTMNetwork,
     Adder,
     Multiplier,
+    Activation,
+    GlobalAveragePooling,
+    SiLU,
+    SwiGLU,
+    MHA,
 )
 import os
 import struct
@@ -45,7 +50,7 @@ layer_types = {
     "CNN": CNN,
     "LSTMNetwork": LSTMNetwork,
     "BN": BN,
-    "Pool": Pool,
+    "MaxPooling": MaxPooling,
     "Res": Res,
     "Embedding": Embedding,
     "Recurrent": Recurrent,
@@ -53,6 +58,11 @@ layer_types = {
     "OneHotMaker": OneHotMaker,
     "Adder": Adder,
     "Multiplier": Multiplier,
+    "Activation": Activation,
+    "GlobalAveragePooling": GlobalAveragePooling,
+    "SiLU": SiLU,
+    "SwiGLU": SwiGLU,
+    "MHA": MHA,
 }
 
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
-from core.exit.exit_loss import ExitLoss
-from core.layer.fc import FC
-from core.layer.biais import Biais
-from core.layer.activation import ReLU
+from ..exit.exit_loss import ExitLoss
+from ..layer.fc import FC
+from ..layer.biais import Biais
+from ..activation.relu import ReLU
 from .network import Network
 
 
