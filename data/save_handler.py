@@ -34,9 +34,8 @@ layer_types = {
     "SiLU": core.SiLU,
     "SwiGLU": core.SwiGLU,
     "MHA": core.MHA,
-    "TransformerBlock": core.TransformerBlock,
     "Linear": core.Linear,
-    "GPT": core.GPT,
+    "LLaMA": core.LLaMA,
     "Block": core.Block,
     "RMSNorm": core.RMSNorm,
 }

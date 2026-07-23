@@ -15,7 +15,7 @@ class ConsoleVisualization:
         self.loss = 0.0
         self.accuracy = 0.0
         self._cursor_hidden = False
-        self.max_fps = 24
+        self.max_fps = 20
         self.timestamp_last_render = 0.0
         self._hide_cursor()
 

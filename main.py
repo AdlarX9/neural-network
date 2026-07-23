@@ -1,8 +1,8 @@
-from scripts import number_recognition, shape_learning, word_prediction, chatgpt
+from scripts import number_recognition, shape_learning, word_prediction, test_llama, llama
 
 
 def main() -> None:
-    chatgpt()
+    llama()
 
 
 if __name__ == "__main__":

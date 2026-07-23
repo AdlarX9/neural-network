@@ -16,8 +16,9 @@ class ProbaExit(ExitLoss):
 
     def get_loss(self: ProbaExit, prediction: NDArray[np.float64], answer: NDArray[np.float64]) -> float:
         epsilon = 1e-10
+        _, p = prediction.shape
         prediction = np.clip(prediction, epsilon, 1 - epsilon)
-        loss = -np.sum(answer * np.log(prediction))  # cross-entropy
+        loss = -np.sum(answer * np.log(prediction)) / p  # cross-entropy
         return loss
 
     def get_gradient(

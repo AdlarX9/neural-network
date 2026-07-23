@@ -25,7 +25,7 @@ def word_prediction() -> None:
     if not embedding.load(embedding_name):
         embedding.build_vocab(sample)
         embedding.set_lr(0.1)
-        embedding.cbow_training(sample, window=2, batch=40_000)
+        embedding.cbow_training(sample, window=2, batch=4_000)
         embedding.save(embedding_name)
 
     # Build LSTM

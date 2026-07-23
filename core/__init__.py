@@ -2,8 +2,7 @@ from .network.network import Network
 from .network.mlp import MLP
 from .network.cnn import CNN
 from .network.lstm import LSTMNetwork
-from .network.gpt import GPT
-from .block.transformer import TransformerBlock
+from .network.llama import LLaMA
 from .block.swiglu import SwiGLU
 from .layer.mha import MHA
 from .block.one_hot_maker import OneHotMaker
