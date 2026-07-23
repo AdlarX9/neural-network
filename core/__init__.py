@@ -7,6 +7,7 @@ from .block.swiglu import SwiGLU
 from .layer.mha import MHA
 from .block.one_hot_maker import OneHotMaker
 from .layer.embedding import Embedding
+from .network.gpt import GPT
 from .network.word_network import WordNetwork
 from .utils.tokenizer import Tokenizer, normalize
 from .activation.silu import SiLU

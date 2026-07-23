@@ -9,10 +9,10 @@ from ..block.block import Block
 from ..layer.mha import MHA
 from ..block.linear import Linear
 from ..block.swiglu import SwiGLU
-from .word_network import WordNetwork
+from .gpt import GPT
 
 
-class LLaMA(WordNetwork):
+class LLaMA(GPT):
     def __init__(
         self: LLaMA,
         head_numbers: list[int] = [],
@@ -27,7 +27,3 @@ class LLaMA(WordNetwork):
             layers.append(Res(Block(RMSNorm(), SwiGLU(int(8 / 3 * embedding.dim)), Linear(embedding.dim))))
         layers += [RMSNorm(), OneHotMaker(embedding)]
         super().__init__(layers, (embedding.tokenizer.length(), -1), lr, ProbaExit(axis=0))
-
-    def predict_next_word(self: LLaMA, beginning: list[str]) -> str:
-        predictions = self.compute_words(beginning)
-        return predictions[-1]

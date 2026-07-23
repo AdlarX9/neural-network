@@ -18,7 +18,7 @@ This project *is closer to* an **sandbox** to **learn and play with AI** than it
 I have **designed** and **coded** myself the *core algorithms* of **deep learning** you will find in this project. I have imagined the **main architecture** after *teaching myself* the basics of **machine learning** and deep learning.  
 Therefore, **no code is AI generated** as it is part of a **learning process** *(except for the `/graphics` directory :)*
 
-## Get started
+## Getting started
 
 If you want to **launch this project**, follow these *steps*:
 
@@ -48,33 +48,42 @@ python main.py
 
 ## Word prediction
 
-One of the default scripts provided by this project is word prediction. A recurrent neural network learns from a text to predict the word that is the most likely to come after a given sentence. For example, you will find in this project, a word prediction that learns only from these fifteen words:
+### First steps
+
+One of the default scripts provided by this project is *word prediction*. A *neural network* (**LSTM** or **GPT**) learns from a text to **predict** the word **that is the most likely to come after a given sentence**. For example, you will find in this project, a word prediction model that learns **only from these fifteen words**:
 ```
 roi duc duchesse prince princesse bisous amour mariage lit dormir repos travail etat salaire argent
 ```
-And after a few minutes of training of the word embedding and the neural network, it easily spits you out the full sequence from the three first words:
+And after **a few minutes of training** of the *word embedding* and the *neural network*, it easily spits you out the **full sequence** from the three first words:
 ```
 roi duc duchesse | prince princesse bisous amour mariage lit dormir repos travail etat salaire argent
 ```
 
+### Going further
+
+The next step is to **scale this up** to **hundreds of thousands of tokens**, and see the results after an hour of training :
+
+> ![gpt](./examples/gpt.png)
+> *Our **GPT** (based on **LLaMA**'s architectures) can now complete sentences with almost no syntax errors*
+
 ## Shape learning
 
 > ![ovale](./examples/ovale.png)  
-> *Example of a model trained to reproduce the shape on the left square, we can clearly see the model's approximation on the right, which was learnt during its training*
+> *Example of a model trained to reproduce the shape on the left square, we can clearly see the **model's approximation** on the right, which was learnt during its training*
 
 > ![donut](./examples/donut.png)  
-> *Same thing with a more complex shape*
+> *Same thing with a more **complex** shape*
 
 ## Number recognition
 
 > ![2](./examples/2.png)  
-> *The number 2*
+> *The number **2***
 
 > ![6](./examples/6.png)  
-> *The number 6*
+> *The number **6***
 
 > ![8](./examples/8.png)  
-> *The number 8*
+> *The number **8***
 
 > ![3](./examples/3.png)  
-> *The number 3, but it is not well drawn so the model hesitates with a 2*
+> *The number **3**, but it is not well drawn so the model hesitates with a 2*

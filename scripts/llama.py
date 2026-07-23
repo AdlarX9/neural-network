@@ -1,5 +1,6 @@
 from core import LLaMA, Embedding
 from data import scrap_text
+from graphics import chat
 
 sample = scrap_text(100_000)
 
@@ -23,7 +24,7 @@ def llama():
     gpt_name = "llama"
     head_numbers = [8, 8, 8, 8, 8, 8, 8, 8]
 
-    embedding = Embedding(96)
+    embedding = Embedding(96)  # Must be divisible by 16 (which is 2 * H)
     embedding_name = "embedding"
     if not embedding.load(embedding_name):
         embedding.build_vocab(sample)
@@ -31,7 +32,7 @@ def llama():
         embedding.cbow_training(sample, window=5, batch=1)
         embedding.save(embedding_name)
 
-    lr = 0.0005
+    lr = 0.001
     gpt = LLaMA(
         head_numbers=head_numbers,
         embedding=embedding,
@@ -41,16 +42,8 @@ def llama():
     gpt.set_lr(lr)
 
     data = build_data()
-    batch = 20
+    batch = 50
     gpt.train_words(data, batch)
     gpt.save(gpt_name)
 
-    generate_nbr = 20
-    entry = str("je ne suis pas")
-    context = entry.split(' ')
-    predictions = []
-    for _ in range(generate_nbr):
-        prediction = gpt.predict_next_word(context)
-        predictions.append(prediction)
-        context.append(prediction)
-    print(entry, "|", ' '.join(predictions))
+    chat(gpt)
