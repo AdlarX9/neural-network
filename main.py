@@ -1,4 +1,4 @@
-from scripts import number_recognition, shape_learning, word_prediction, test_llama, llama
+from scripts import number_recognition, shape_learning, word_lstm, word_llama, llama
 
 
 def main() -> None:

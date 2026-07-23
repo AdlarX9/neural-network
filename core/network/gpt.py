@@ -2,19 +2,23 @@ from __future__ import annotations
 
 from core.exit.exit_loss import ExitLoss
 from core.layer.layer import Layer
-from .word_network import WordNetwork
+from .text_network import TextNetwork
+from ..layer.embedding import Embedding
 
 
-class GPT(WordNetwork):
+class GPT(TextNetwork):
     def __init__(
         self: GPT,
         layers: list[Layer] = [],
         input_shape: tuple = (0,),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
+        embedding: Embedding = Embedding()
     ) -> None:
-        super().__init__(layers, input_shape, lr, exit_loss)
+        super().__init__(layers, input_shape, lr, exit_loss, embedding)
 
-    def predict_next_word(self: GPT, beginning: list[str]) -> str:
-        predictions = self.compute_words(beginning)
-        return predictions[-1]
+    def predict_next_token(self: GPT, beginning: str) -> str:
+        one_hot = self.get_one_hot(self.tokenize(beginning))
+        result = self.compute(one_hot)
+        prediction = self.untokenize(self.get_tokens(result)[-1:])
+        return prediction

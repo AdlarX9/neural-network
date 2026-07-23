@@ -8,8 +8,7 @@ from .layer.mha import MHA
 from .block.one_hot_maker import OneHotMaker
 from .layer.embedding import Embedding
 from .network.gpt import GPT
-from .network.word_network import WordNetwork
-from .utils.tokenizer import Tokenizer, normalize
+from .network.text_network import TextNetwork
 from .activation.silu import SiLU
 from .activation.relu import ReLU
 from .activation.activation import Activation
@@ -30,5 +29,8 @@ from .layer.lstm import LSTM
 from .block.adder import Adder
 from .block.multiplier import Multiplier
 from .transform.rms_norm import RMSNorm
+from .tokenizer.byte_tokenizer import ByteTokenizer
+from .tokenizer.word_tokenizer import WordTokenizer, normalize
+from .tokenizer.tokenizer import Tokenizer
 from .block.block import Block
 from .layer.layer import Layer, check_shapes

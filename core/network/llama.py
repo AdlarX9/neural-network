@@ -21,9 +21,9 @@ class LLaMA(GPT):
     ) -> None:
         if embedding is None:
             return
-        layers: list[Layer] = [embedding]
+        layers: list[Layer] = []
         for H in head_numbers:
             layers.append(Res(Block(RMSNorm(), MHA(H))))
             layers.append(Res(Block(RMSNorm(), SwiGLU(int(8 / 3 * embedding.dim)), Linear(embedding.dim))))
         layers += [RMSNorm(), OneHotMaker(embedding)]
-        super().__init__(layers, (embedding.tokenizer.length(), -1), lr, ProbaExit(axis=0))
+        super().__init__(layers, (embedding.dim, -1), lr, ProbaExit(axis=0), embedding)

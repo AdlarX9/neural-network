@@ -8,14 +8,15 @@ if TYPE_CHECKING:
     from core import GPT
 
 
-def _generate_completion(gpt: GPT, prompt: str, word_count: int) -> tuple[list[str], str]:
-    context = prompt.split()
-    predictions: list[str] = []
+def _generate_completion(gpt: GPT, prompt: str, word_count: int) -> tuple[str, str]:
+    context: str = prompt
+    predictions: str = ""
     for _ in range(word_count):
-        prediction = gpt.predict_next_word(context)
-        predictions.append(prediction)
-        context.append(prediction)
-    completed_sentence = " ".join([prompt] + predictions).strip()
+        prediction = gpt.predict_next_token(context)
+        predictions += prediction
+        context += prediction
+    completed_sentence = prompt + predictions
+    print(predictions, completed_sentence)
     return predictions, completed_sentence
 
 

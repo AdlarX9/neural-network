@@ -1,37 +1,42 @@
-from core import LLaMA, Embedding
+from core import LLaMA, Embedding, ByteTokenizer, WordTokenizer
 from data import scrap_text
 from graphics import chat
 
-sample = scrap_text(100_000)
+text = scrap_text(100_000)
 
 
-def build_data() -> list[tuple[list[str], list[str]]]:
-    words = sample.split(" ")
-    samples: list[list[str]] = []
+def build_data(tokens: list[int]) -> list[tuple[list[int], list[int]]]:
+    samples: list[list[int]] = []
     lengths = [4, 8, 16, 32, 64, 128]
-    for i in range(0, len(words), sum(lengths) + len(lengths)):
+    for i in range(0, len(tokens), sum(lengths) + len(lengths)):
         idx = i
         for length in lengths:
-            samples.append(words[idx : idx + length + 1])
+            samples.append(tokens[idx : idx + length + 1])
             idx += length + 1
-    data: list[tuple[list[str], list[str]]] = []
+    data: list[tuple[list[int], list[int]]] = []
     for example in samples:
-        data.append((example[:-1], example[1:]))
+        if len(example) >= 2:
+            data.append((example[:-1], example[1:]))
     return data
 
 
 def llama():
-    gpt_name = "llama"
-    head_numbers = [8, 8, 8, 8, 8, 8, 8, 8]
+    # Cache
+    tokens: list[int] | None = None
 
-    embedding = Embedding(96)  # Must be divisible by 16 (which is 2 * H)
-    embedding_name = "embedding"
+    # Build Embedding
+    embedding = Embedding(ByteTokenizer(8_192), 96)  # Must be divisible by 16 (which is 2 * H)
+    embedding_name = "llama_embedding"
     if not embedding.load(embedding_name):
-        embedding.build_vocab(sample)
+        embedding.build_vocab(text)
         embedding.set_lr(1)
-        embedding.cbow_training(sample, window=5, batch=1)
+        tokens = embedding.tokenizer.tokenize(text)
+        embedding.cbow_training(tokens, window=5, batch=1)
         embedding.save(embedding_name)
 
+    # Build LLaMA
+    gpt_name = "llama"
+    head_numbers = [8, 8, 8, 8, 8, 8, 8, 8]
     lr = 0.001
     gpt = LLaMA(
         head_numbers=head_numbers,
@@ -40,10 +45,20 @@ def llama():
     )
     gpt.load(gpt_name)
     gpt.set_lr(lr)
+    gpt.embedding = embedding
 
-    data = build_data()
+    # Build data
+    if tokens is None:
+        tokens = embedding.tokenizer.tokenize(text)
+    data = build_data(tokens)
+
+    # Train
     batch = 50
-    gpt.train_words(data, batch)
+    gpt.train_tokens(data, batch)
+
+    # Save
+    gpt.embedding.save(embedding_name)
     gpt.save(gpt_name)
 
+    # Chat
     chat(gpt)
