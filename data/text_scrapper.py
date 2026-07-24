@@ -5,6 +5,7 @@ from core import normalize
 import os
 
 WIKI_BASE = "https://fr.wikipedia.org"
+name = "scrapped"
 
 
 def get_article_text(url: str):
@@ -17,9 +18,9 @@ def get_article_text(url: str):
 
     paragraphs = content.find_all("p")
     text = " ".join(p.get_text(" ", strip=True) for p in paragraphs)
-    links = []
+    links: list[str] = []
     for a in content.find_all("a", href=True):
-        href = a["href"]
+        href: str = str(a["href"])
 
         if href.startswith("/wiki/") and ":" not in href and "#" not in href:
             links.append(WIKI_BASE + href)
@@ -27,9 +28,9 @@ def get_article_text(url: str):
     return text, links
 
 
-def scrap_text(length: int, offset: int = 0) -> str:
+def scrap_text(length: int, offset: int = 0, must_normalize: bool = False) -> str:
     directory = os.path.join("data", "text")
-    path = os.path.join(directory, "scrapped.txt")
+    path = os.path.join(directory, name + ".txt")
 
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -42,15 +43,15 @@ def scrap_text(length: int, offset: int = 0) -> str:
     except Exception as e:
         print(f"Error while reading text: {e}")
 
-    words = "roi duc duchesse prince princesse bisous amour mariage lit dormir repos travail etat salaire argent".split(
-        " "
-    )  # We set the fifteen first words as a showcase
+    words: list[str] = []
+
     current_url = "https://fr.wikipedia.org/wiki/Sp%C3%A9cial:Page_au_hasard"
     visited = set()
     while len(words) < length + offset:
         try:
             text, links = get_article_text(current_url)
-            text = normalize(text)
+            if must_normalize:
+                text = normalize(text)
             if text:
                 words.extend(text.split())
             visited.add(current_url)

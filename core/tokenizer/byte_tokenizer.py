@@ -1,87 +1,302 @@
 from __future__ import annotations
 from .tokenizer import Tokenizer
+from collections import Counter
+import heapq
+import re
 
 
 class ByteTokenizer(Tokenizer):
-    def __init__(self: ByteTokenizer, vocab_size: int = 32_768) -> None:
-        self.V: dict[tuple[int, ...], int] = {}
-        self.R: list[tuple[tuple[int, ...], tuple[int, ...]]] = []
-        self.vocab_size = vocab_size
+    _PRETOKENIZE_PATTERN = re.compile(r"\s+|[A-Za-zÀ-ÖØ-öø-ÿ]+|\d+|[^A-Za-zÀ-ÖØ-öø-ÿ\d\s]+", re.UNICODE)
 
-    def build_vocab(self: ByteTokenizer, corpus: str) -> None:
-        show = False
-        if len(corpus) >= 10_000:
-            show = True
-        byte_values = list(corpus.encode("utf-8"))
+    def __init__(self: ByteTokenizer, vocab_size: int = 32_768) -> None:
+        if vocab_size < 256:
+            raise ValueError("vocab_size must be at least 256")
+        self.vocab_size = vocab_size
+        self.V: dict[tuple[int, ...], int] = {(i,): i for i in range(256)}
+        self.R: list[tuple[tuple[int, ...], tuple[int, ...]]] = []
+        self._token_bytes: list[bytes] = [bytes([i]) for i in range(256)]
+        self._merge_ranks: dict[tuple[int, int], int] = {}
+
+    def _pretokenize(self: ByteTokenizer, text: str) -> list[bytes]:
+        return [match.group(0).encode("utf-8") for match in self._PRETOKENIZE_PATTERN.finditer(text)]
+
+    def build_vocab(self: "ByteTokenizer", corpus: str) -> None:
         self.V = {(i,): i for i in range(256)}
         self.R = []
-
-        tokens = [(b,) for b in byte_values]
-        next_id = 256
-        while next_id < self.vocab_size:
-            if show:
-                print(
-                    "Vocabulary progress:", round(next_id / min(self.vocab_size, len(byte_values)) * 100, 2), "%", end="\r"
-                )
-
-            # Compte les paires adjacentes
-            pair_counts: dict[tuple[tuple[int, ...], tuple[int, ...]], int] = {}
-            for i in range(len(tokens) - 1):
-                pair = (tokens[i], tokens[i + 1])
-                pair_counts[pair] = pair_counts.get(pair, 0) + 1
-            if not pair_counts:
+        self._token_bytes = [bytes([i]) for i in range(256)]
+        self._merge_ranks = {}
+        if not corpus:
+            return
+        if self.vocab_size == 256:
+            return
+        pieces = self._pretokenize(corpus)
+        if not pieces:
+            return
+        sequences: list[list[int]] = []
+        for piece in pieces:
+            if piece:
+                sequences.append(list(piece))
+        if not sequences:
+            return
+        prev: list[list[int]] = []
+        next_: list[list[int]] = []
+        alive: list[bytearray] = []
+        pair_counts: Counter[tuple[int, int]] = Counter()
+        pair_occurrences: dict[
+            tuple[int, int],
+            set[tuple[int, int]],
+        ] = {}
+        for sequence_id, sequence in enumerate(sequences):
+            length = len(sequence)
+            sequence_prev = [i - 1 for i in range(length)]
+            sequence_next = [i + 1 if i + 1 < length else -1 for i in range(length)]
+            sequence_alive = bytearray(b"\x01") * length
+            prev.append(sequence_prev)
+            next_.append(sequence_next)
+            alive.append(sequence_alive)
+            for position in range(length - 1):
+                pair = (sequence[position], sequence[position + 1])
+                pair_counts[pair] += 1
+                pair_occurrences.setdefault(pair, set()).add((sequence_id, position))
+        heap = [(-count, left, right) for (left, right), count in pair_counts.items()]
+        heapq.heapify(heap)
+        show_progress = len(corpus) >= 10_000
+        next_token_id = 256
+        target_merges = self.vocab_size - 256
+        while next_token_id < self.vocab_size:
+            merge_index = next_token_id - 256
+            if show_progress and merge_index % 100 == 0:
+                progress = merge_index / target_merges * 100
+                print("Vocabulary progress:" f" {progress:.2f}%", end="\r")
+            best_pair = None
+            while heap:
+                negative_count, left, right = heapq.heappop(heap)
+                pair = (left, right)
+                current_count = pair_counts.get(pair, 0)
+                if current_count == -negative_count and current_count > 0:
+                    best_pair = pair
+                    break
+            if best_pair is None:
                 break
-            best_pair = max(pair_counts, key=lambda pair: pair_counts[pair])
             left, right = best_pair
-            merged = left + right
+            occurrences = pair_occurrences.get(best_pair)
+            if not occurrences:
+                pair_counts.pop(best_pair, None)
+                continue
+            merged_id = next_token_id
+            merged_bytes = self._token_bytes[left] + self._token_bytes[right]
+            self._token_bytes.append(merged_bytes)
+            left_tuple = tuple(self._token_bytes[left])
+            right_tuple = tuple(self._token_bytes[right])
+            merged_tuple = tuple(merged_bytes)
+            self.V[merged_tuple] = merged_id
+            self.R.append((left_tuple, right_tuple))
+            self._merge_ranks[best_pair] = merge_index
+            next_token_id += 1
 
-            # Ajout au vocabulaire et aux règles
-            self.V[merged] = next_id
-            self.R.append(best_pair)
+            occurrences_by_sequence: dict[int, list[int]] = {}
+            for sequence_id, position in occurrences:
+                occurrences_by_sequence.setdefault(sequence_id, []).append(position)
 
-            # Application de la fusion
-            new_tokens = []
-            i = 0
-            while i < len(tokens):
-                if i < len(tokens) - 1 and tokens[i] == left and tokens[i + 1] == right:
-                    new_tokens.append(merged)
-                    i += 2
-                else:
-                    new_tokens.append(tokens[i])
-                    i += 1
-            tokens = new_tokens
-            next_id += 1
-        if show:
-            print("Vocabulary progress: 100.00 %")
+            for (
+                sequence_id,
+                positions,
+            ) in occurrences_by_sequence.items():
+                positions.sort()
+                sequence = sequences[sequence_id]
+                sequence_prev = prev[sequence_id]
+                sequence_next = next_[sequence_id]
+                sequence_alive = alive[sequence_id]
+                for left_position in positions:
+                    if not sequence_alive[left_position]:
+                        continue
+                    right_position = sequence_next[left_position]
+                    if right_position == -1:
+                        continue
+                    if not sequence_alive[right_position]:
+                        continue
+                    if sequence[left_position] != left or sequence[right_position] != right:
+                        continue
+                    previous_position = sequence_prev[left_position]
+                    next_position = sequence_next[right_position]
 
-    def tokenize(self: ByteTokenizer, text: str) -> list[int]:
-        show = False
-        if len(text) >= 10_000:
-            show = True
-        tokens = [(b,) for b in text.encode("utf-8")]
-        for idx, (left, right) in enumerate(self.R):
+                    if previous_position != -1:
+                        previous_id = sequence[previous_position]
+                        old_pair = (previous_id, left)
+                        pair_counts[old_pair] -= 1
+                        old_occurrences = pair_occurrences.get(old_pair)
+                        if old_occurrences is not None:
+                            old_occurrences.discard((sequence_id, previous_position))
+
+                    pair_counts[best_pair] -= 1
+                    occurrences.discard((sequence_id, left_position))
+
+                    if next_position != -1:
+                        next_id = sequence[next_position]
+                        old_pair = (right, next_id)
+                        pair_counts[old_pair] -= 1
+                        old_occurrences = pair_occurrences.get(old_pair)
+                        if old_occurrences is not None:
+                            old_occurrences.discard((sequence_id, right_position))
+
+                    sequence[left_position] = merged_id
+                    sequence_alive[right_position] = 0
+                    sequence_next[left_position] = next_position
+                    if next_position != -1:
+                        sequence_prev[next_position] = left_position
+
+                    if previous_position != -1:
+                        new_pair = (sequence[previous_position], merged_id)
+                        pair_counts[new_pair] += 1
+                        pair_occurrences.setdefault(new_pair, set()).add((sequence_id, previous_position))
+                        heapq.heappush(heap, (-pair_counts[new_pair], new_pair[0], new_pair[1]))
+
+                    if next_position != -1:
+                        new_pair = (merged_id, sequence[next_position])
+                        pair_counts[new_pair] += 1
+                        pair_occurrences.setdefault(new_pair, set()).add((sequence_id, left_position))
+                        heapq.heappush(heap, (-pair_counts[new_pair], new_pair[0], new_pair[1]))
+            if pair_counts.get(best_pair, 0) <= 0:
+                pair_counts.pop(best_pair, None)
+            if not pair_occurrences.get(best_pair):
+                pair_occurrences.pop(best_pair, None)
+        if show_progress:
+            print("Vocabulary progress: 100.00%")
+        if len(self.V) != self.vocab_size:
+            raise RuntimeError(
+                "BPE vocabulary construction "
+                "stopped prematurely: "
+                f"expected {self.vocab_size} "
+                f"tokens, got {len(self.V)}."
+            )
+        if len(self._token_bytes) != self.vocab_size:
+            raise RuntimeError(
+                "BPE token byte table has an "
+                "invalid size: "
+                f"expected {self.vocab_size}, "
+                f"got {len(self._token_bytes)}."
+            )
+        if len(self.R) != self.vocab_size - 256:
+            raise RuntimeError(
+                "BPE rule count is inconsistent: " f"expected {self.vocab_size - 256}, " f"got {len(self.R)}."
+            )
+        if len(self._merge_ranks) != (self.vocab_size - 256):
+            raise RuntimeError(
+                "BPE merge rank count is inconsistent: "
+                f"expected {self.vocab_size - 256}, "
+                f"got {len(self._merge_ranks)}."
+            )
+        if set(self.V.values()) != set(range(self.vocab_size)):
+            raise RuntimeError("BPE vocabulary contains " "non-contiguous token IDs.")
+
+    def tokenize(
+        self: ByteTokenizer,
+        text: str,
+    ) -> list[int]:
+        show = bool(len(text) > 100_000)
+        if not text:
+            return []
+        pieces = self._pretokenize(text)
+        result: list[int] = []
+        for idx, piece in enumerate(pieces):
+            if not piece:
+                continue
             if show:
-                print("Tokenizing progress:", round(idx / len(self.R) * 100, 2), "%", end="\r")
-            merged = left + right
-            new_tokens = []
-            i = 0
-            while i < len(tokens):
-                if i < len(tokens) - 1 and tokens[i] == left and tokens[i + 1] == right:
-                    new_tokens.append(merged)
-                    i += 2
-                else:
-                    new_tokens.append(tokens[i])
-                    i += 1
-            tokens = new_tokens
+                progress = idx / len(pieces) * 100
+                print("Tokenizing progress: " f"{progress:.2f}%", end="\r")
+            sequence = list(piece)
+            length = len(sequence)
+            if length == 1:
+                result.append(sequence[0])
+                continue
+            prev = [i - 1 for i in range(length)]
+            next_ = [i + 1 if i + 1 < length else -1 for i in range(length)]
+            alive = bytearray(b"\x01") * length
+            heap = []
+            for position in range(length - 1):
+                pair = (
+                    sequence[position],
+                    sequence[position + 1],
+                )
+                rank = self._merge_ranks.get(pair)
+                if rank is not None:
+                    heapq.heappush(
+                        heap,
+                        (
+                            rank,
+                            position,
+                        ),
+                    )
+            while heap:
+                rank, left_position = heapq.heappop(heap)
+                if not alive[left_position]:
+                    continue
+                right_position = next_[left_position]
+                if right_position == -1:
+                    continue
+                if not alive[right_position]:
+                    continue
+                pair = (
+                    sequence[left_position],
+                    sequence[right_position],
+                )
+                current_rank = self._merge_ranks.get(pair)
+                if current_rank != rank:
+                    continue
+                merged_id = self.V[tuple(self._token_bytes[pair[0]] + self._token_bytes[pair[1]])]
+                previous_position = prev[left_position]
+                next_position = next_[right_position]
+                sequence[left_position] = merged_id
+                alive[right_position] = 0
+                next_[left_position] = next_position
+                if next_position != -1:
+                    prev[next_position] = left_position
+                if previous_position != -1:
+                    left_pair = (
+                        sequence[previous_position],
+                        sequence[left_position],
+                    )
+                    left_rank = self._merge_ranks.get(left_pair)
+                    if left_rank is not None:
+                        heapq.heappush(
+                            heap,
+                            (
+                                left_rank,
+                                previous_position,
+                            ),
+                        )
+                if next_position != -1:
+                    right_pair = (
+                        sequence[left_position],
+                        sequence[next_position],
+                    )
+                    right_rank = self._merge_ranks.get(right_pair)
+                    if right_rank is not None:
+                        heapq.heappush(
+                            heap,
+                            (
+                                right_rank,
+                                left_position,
+                            ),
+                        )
+            position = 0
+            while position != -1:
+                if alive[position]:
+                    result.append(sequence[position])
+                position = next_[position]
         if show:
-            print("Tokenizing progress: 100.00 %")
-        return [self.V[token] for token in tokens]
+            print("Tokenizing progress: 100.00%")
+        return result
 
-    def untokenize(self: ByteTokenizer, tokens: list[int]) -> str:
-        id_to_token = {v: k for k, v in self.V.items()}
-        byte_values = []
-        for token in tokens:
-            byte_values += id_to_token[token]
+    def untokenize(
+        self: ByteTokenizer,
+        tokens: list[int],
+    ) -> str:
+        byte_values = bytearray()
+        for token_id in tokens:
+            if token_id < 0 or token_id >= len(self._token_bytes):
+                raise ValueError(f"Unknown token ID: " f"{token_id}")
+            byte_values.extend(self._token_bytes[token_id])
         return bytes(byte_values).decode("utf-8")
 
     def get_data(self: ByteTokenizer) -> tuple[list[int], list[float], list[str]]:
@@ -98,8 +313,7 @@ class ByteTokenizer(Tokenizer):
             int_list.append(value)
             int_list.append(len(key))
             int_list.extend(key)
-
-        return int_list, [], []
+        return (int_list, [], [])
 
     def load_from_data(
         self: ByteTokenizer,
@@ -109,6 +323,8 @@ class ByteTokenizer(Tokenizer):
     ) -> None:
         self.V = {}
         self.R = []
+        self._token_bytes = []
+        self._merge_ranks = {}
         idx = 0
         self.vocab_size = int_list[idx]
         idx += 1
@@ -124,6 +340,7 @@ class ByteTokenizer(Tokenizer):
             right = tuple(int_list[idx : idx + right_len])
             idx += right_len
             self.R.append((left, right))
+
         v_count = int_list[idx]
         idx += 1
         for _ in range(v_count):
@@ -134,3 +351,20 @@ class ByteTokenizer(Tokenizer):
             key = tuple(int_list[idx : idx + key_len])
             idx += key_len
             self.V[key] = value
+        max_token_id = max(
+            self.V.values(),
+            default=255,
+        )
+        self._token_bytes = [b"" for _ in range(max_token_id + 1)]
+
+        for key, token_id in self.V.items():
+            self._token_bytes[token_id] = bytes(key)
+        self._merge_ranks = {}
+
+        for merge_index, (
+            left,
+            right,
+        ) in enumerate(self.R):
+            left_id = self.V[left]
+            right_id = self.V[right]
+            self._merge_ranks[(left_id, right_id)] = merge_index

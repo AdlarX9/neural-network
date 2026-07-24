@@ -36,7 +36,7 @@ class WordTokenizer(Tokenizer):
         for token in tokens:
             word = next(k for k, v in self.V.items() if v == token)
             words.append(word)
-        return " " + " ".join(words)
+        return " ".join(words)
 
     def get_data(self: WordTokenizer) -> tuple[list[int], list[float], list[str]]:
         str_list = list(self.V.keys())

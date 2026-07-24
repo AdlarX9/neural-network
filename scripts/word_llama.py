@@ -1,6 +1,5 @@
 from core import LLaMA, TextNetwork, Embedding, WordTokenizer
 from .word_lstm import sample
-from graphics import chat
 
 
 def build_data(gpt: TextNetwork) -> list[tuple[list[int], list[int]]]:
@@ -39,4 +38,4 @@ def word_llama():
     print("Trained on:")
     print(sample)
     print("and learned:")
-    print(gpt.untokenize(gpt.tokenize(sample)[:1]) + " |" + predictions)
+    print(gpt.untokenize(gpt.tokenize(sample)[:1]), "|", predictions)

@@ -108,16 +108,20 @@ class Embedding(Layer):
         return self.tokenizer.tokenize(text)
 
     def get_one_hot(self: Embedding, entry: list[int]) -> NDArray[np.float64]:
-        one_hot = None
-        for token in entry:
-            representation = self.tokenizer.get_one_hot(token).reshape(-1, 1)
-            if one_hot is None:
-                one_hot = representation
-            else:
-                one_hot = np.hstack((one_hot, representation))
-        if one_hot is None:
-            one_hot = np.array([[]])
+        if len(entry) == 0:
+            return np.array([[]])
+        one_hot = np.zeros((self.tokenizer.length(), len(entry)))
+        for i, token in enumerate(entry):
+            one_hot[token, i] = 1
         return one_hot
+
+    def get_embedded(self: Embedding, entry: list[int]) -> NDArray[np.float64]:
+        if len(entry) == 0:
+            return np.array([[]])
+        embedded = self.W[:, entry[0]].reshape(-1, 1)
+        for i in range(1, len(entry)):
+            embedded = np.hstack((embedded, self.W[:, entry[i]].reshape(-1, 1)))
+        return embedded
 
     def get_tokens(self: Embedding, entry: NDArray[np.float64]) -> list[int]:
         _, p = entry.shape

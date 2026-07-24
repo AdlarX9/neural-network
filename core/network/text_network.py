@@ -20,15 +20,14 @@ class TextNetwork(Network):
         super().__init__(layers, input_shape, lr, exit_loss)
         self.embedding: Embedding = embedding
 
-    def compute(self: TextNetwork, entry: NDArray[np.float64], memorize: bool = False) -> NDArray[np.float64]:
-        embedded = self.embedding.compute(entry, memorize)
-        return super().compute(embedded, memorize)
-
     def tokenize(self: TextNetwork, text: str) -> list[int]:
         return self.embedding.tokenize(text)
 
     def get_one_hot(self: TextNetwork, entry: list[int]) -> NDArray[np.float64]:
         return self.embedding.get_one_hot(entry)
+    
+    def get_embedded(self: TextNetwork, entry: list[int]) -> NDArray[np.float64]:
+        return self.embedding.get_embedded(entry)
 
     def get_tokens(self: TextNetwork, entry: NDArray[np.float64]) -> list[int]:
         return self.embedding.get_tokens(entry)
@@ -37,7 +36,7 @@ class TextNetwork(Network):
         return self.embedding.untokenize(tokens)
 
     def compute_text(self: TextNetwork, entry: str, memorize: bool = False) -> str:
-        one_hot = self.get_one_hot(self.tokenize(entry))
+        one_hot = self.get_embedded(self.tokenize(entry))
         result = self.compute(one_hot, memorize)
         output = self.untokenize(self.get_tokens(result))
         return output
@@ -49,10 +48,16 @@ class TextNetwork(Network):
         visualization: ConsoleVisualization | None = None,
     ) -> None:
         new_data: list[tuple[NDArray[np.float64], NDArray[np.float64]]] = []
+        show = bool(len(data) >= 1000)
         for i in range(len(data)):
-            entry = self.get_one_hot(data[i][0])
+            if show:
+                progress = i / len(data) * 100
+                print('One Hot progress: ' f"{progress:.2f}%", end='\r')
+            entry = self.get_embedded(data[i][0])
             answer = self.get_one_hot(data[i][1])
             new_data.append((entry, answer))
+        if show:
+            print('One Hot progress: 100.00%')
         return super().train(new_data, batch, visualization)
 
     def get_data(self: TextNetwork) -> tuple[list[int], list[float], list[str]]:
