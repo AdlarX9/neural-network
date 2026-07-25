@@ -16,9 +16,15 @@ class Embedding(Layer):
         self.tokenizer = ByteTokenizer()
         if tokenizer is not None:
             self.tokenizer = tokenizer
+        else:
+            return
         self.dim: int = dim
-        self.W: NDArray[np.float64] = np.array([[]])
-        self.W_prime: NDArray[np.float64] = np.array([[]])
+        self.W: NDArray[np.float64] = np.random.normal(
+            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.dim, self.tokenizer.length())
+        )
+        self.W_prime: NDArray[np.float64] = np.random.normal(
+            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.tokenizer.length(), self.dim)
+        )
 
     def set_input_shape(self: Embedding, input_shape: tuple[int, int]) -> tuple[int, int]:
         if len(input_shape) != 2 or input_shape[0] != self.tokenizer.length():
@@ -28,17 +34,13 @@ class Embedding(Layer):
                 "!=",
                 input_shape,
             )
+        self.W: NDArray[np.float64] = np.random.normal(
+            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.dim, self.tokenizer.length())
+        )
+        self.W_prime: NDArray[np.float64] = np.random.normal(
+            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.tokenizer.length(), self.dim)
+        )
         self.input_shape = input_shape
-        self.W = np.random.normal(
-            -1 / np.sqrt(self.dim),
-            1 / np.sqrt(self.dim),
-            (self.dim, self.tokenizer.length()),
-        )
-        self.W_prime = np.random.normal(
-            -1 / np.sqrt(self.dim),
-            1 / np.sqrt(self.dim),
-            (self.tokenizer.length(), self.dim),
-        )
         self.output_shape = (self.dim, self.input_shape[1])
         return self.output_shape
 
@@ -118,9 +120,9 @@ class Embedding(Layer):
     def get_embedded(self: Embedding, entry: list[int]) -> NDArray[np.float64]:
         if len(entry) == 0:
             return np.array([[]])
-        embedded = self.W[:, entry[0]].reshape(-1, 1)
-        for i in range(1, len(entry)):
-            embedded = np.hstack((embedded, self.W[:, entry[i]].reshape(-1, 1)))
+        embedded = np.empty((self.dim, len(entry)))
+        for i in range(len(entry)):
+            embedded[:, i] = self.W[:, entry[i]]
         return embedded
 
     def get_tokens(self: Embedding, entry: NDArray[np.float64]) -> list[int]:

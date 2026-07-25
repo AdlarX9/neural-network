@@ -5,7 +5,9 @@ import time
 
 
 class ConsoleVisualization:
-    def __init__(self: ConsoleVisualization, total_batches: int, total_items: int, stream=None) -> None:
+    def __init__(
+        self: ConsoleVisualization, total_batches: int = 0, total_items: int = 0, stream=None
+    ) -> None:
         self.total_batches = max(1, total_batches)
         self.total_items = max(1, total_items)
         self.stream = stream if stream is not None else sys.stdout
@@ -17,6 +19,7 @@ class ConsoleVisualization:
         self._cursor_hidden = False
         self.max_fps = 20
         self.timestamp_last_render = 0.0
+        self.title = "Network Training Dashboard"
         self._hide_cursor()
 
     def _hide_cursor(self) -> None:
@@ -81,7 +84,7 @@ class ConsoleVisualization:
 
         lines = [
             "╭" + "─" * max(28, term_width - 2) + "╮",
-            "│ CNN Training Dashboard" + " " * max(0, term_width - 25) + "│",
+            "│ " + self.title + " " * max(0, term_width - 3 - len(self.title)) + "│",
             "├" + "─" * max(28, term_width - 2) + "┤",
             f"│ Temps écoulé        : {self._format_duration(elapsed)}"
             + " " * max(0, term_width - 25 - len(self._format_duration(elapsed)))

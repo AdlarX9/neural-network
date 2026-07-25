@@ -18,7 +18,7 @@ class GPT(TextNetwork):
         super().__init__(layers, input_shape, lr, exit_loss, embedding)
 
     def predict_next_token(self: GPT, beginning: str) -> str:
-        one_hot = self.get_one_hot(self.tokenize(beginning))
+        one_hot = self.get_embedded(self.tokenize(beginning))
         result = self.compute(one_hot)
         prediction = self.untokenize(self.get_tokens(result)[-1:])
         return prediction

@@ -6,6 +6,7 @@ from ..layer.embedding import Embedding
 import numpy as np
 from numpy.typing import NDArray
 from graphics import ConsoleVisualization
+from ..tokenizer.byte_tokenizer import ByteTokenizer
 
 
 class TextNetwork(Network):
@@ -58,7 +59,17 @@ class TextNetwork(Network):
             new_data.append((entry, answer))
         if show:
             print('One Hot progress: 100.00%')
+        del data
         return super().train(new_data, batch, visualization)
+    
+    def print(self: TextNetwork, sentence: str) -> None:
+        tokens = self.tokenize(sentence)
+        for token in tokens:
+            try:
+                if isinstance(self.embedding.tokenizer, ByteTokenizer):
+                    print(self.embedding.tokenizer._token_bytes[token].decode('utf-8'))
+            except:
+                print('error')
 
     def get_data(self: TextNetwork) -> tuple[list[int], list[float], list[str]]:
         self.layers.append(self.embedding)

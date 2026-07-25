@@ -5,6 +5,7 @@ from ..layer.layer import Layer
 from ..exit.exit_loss import ExitLoss
 from ..block.block import Block
 from graphics import ConsoleVisualization
+import time
 
 
 class Network(Block):
@@ -49,19 +50,25 @@ class Network(Block):
         visualization: ConsoleVisualization | None = None,
     ) -> None:
         dashboard = visualization if visualization is not None else ConsoleVisualization(batch, len(data))
+        dashboard.total_batches = batch
+        dashboard.total_items = len(data)
+        timestamp = time.time()
         try:
             max_remember = 600
             correct_items: list[float] = []
             losses: list[float] = []
             for batch_index in range(1, batch + 1):
-                for item_index, el in enumerate(data, start=1):
-                    loss, is_correct = self.single_train(el[0], el[1])
+                for item_index in range(1, len(data) + 1):
+                    loss, is_correct = self.single_train(data[item_index - 1][0], data[item_index - 1][1])
                     correct_items.append(is_correct)
                     losses.append(loss)
                     if len(correct_items) > max_remember:
                         correct_items.pop(0)
                     if len(losses) > max_remember:
                         losses.pop(0)
+                    if item_index % 1000 == 0 and time.time() - timestamp >= 60:
+                        self.save("temp_" + self.__class__.__name__)
+                        timestamp = time.time()
                     accuracy = sum(correct_items) / len(correct_items) if len(correct_items) else 0.0
                     average_loss = sum(losses) / len(losses) if len(losses) else -1.0
                     dashboard.update(batch_index, item_index, average_loss, accuracy)

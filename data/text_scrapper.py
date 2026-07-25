@@ -28,9 +28,11 @@ def get_article_text(url: str):
     return text, links
 
 
-def scrap_text(length: int, offset: int = 0, must_normalize: bool = False) -> str:
+def scrap_text(length: int, offset: int = 0, must_normalize: bool = False, filename: str | None = None) -> str:
     directory = os.path.join("data", "text")
-    path = os.path.join(directory, name + ".txt")
+    if filename is None:
+        filename = name
+    path = os.path.join(directory, filename + ".txt")
 
     try:
         with open(path, "r", encoding="utf-8") as f:

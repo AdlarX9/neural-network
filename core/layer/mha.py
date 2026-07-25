@@ -3,25 +3,11 @@ import numpy as np
 from numpy.typing import NDArray
 from .layer import Layer
 import math
-from ..utils.functions import softmax
-
-
-def RoPE(x: NDArray[np.float64], factor: int = 1) -> NDArray[np.float64]:
-    _, n, p = x.shape
-    if n % 2 != 0:
-        raise ValueError(f"Embedding dimension must be even, got {n}")
-    rotated = np.empty_like(x)
-    rotated[:, 0::2, :] = -x[:, 1::2, :]
-    rotated[:, 1::2, :] = x[:, 0::2, :]
-    positions = np.arange(p)[None, :]
-    omega = 10000 ** (-2 * (np.arange(n) // 2) / n)[:, None]
-    theta = omega @ positions
-    theta = theta[None, :, :]
-    return x * np.cos(factor * theta) + rotated * np.sin(factor * theta)
+from ..utils.functions import softmax, RoPE
 
 
 class MHA(Layer):
-    def __init__(self: MHA, H: int = 1) -> None:
+    def __init__(self: MHA, H: int = 1, causal: bool = False) -> None:
         super().__init__()
         self.H = H
         self.Wq = np.array([[[]]])
@@ -29,6 +15,7 @@ class MHA(Layer):
         self.Wv = np.array([[[]]])
         self.Wo = np.array([[]])
         self.d_h: int = 0
+        self.causal = causal
 
         # Cache
         self.concat = np.array([[]])
@@ -61,8 +48,9 @@ class MHA(Layer):
         self.K = RoPE(K)
         self.Q = Q.swapaxes(1, 2)
         S = self.Q @ self.K / math.sqrt(self.d_h)
-        mask = np.tril(np.full(S.shape, -np.inf), k=-1)
-        S += mask
+        if self.causal:
+            mask = np.tril(np.full(S.shape, -np.inf), k=-1)
+            S += mask
         self.A = softmax(S, axis=1)
         O = self.V @ self.A
 
@@ -99,7 +87,7 @@ class MHA(Layer):
 
     def get_data(self: MHA) -> tuple[list[int], list[float], list[str]]:
         int_list, float_list, str_list = super().get_data()
-        int_list += [self.H, self.d_h]
+        int_list += [self.H, self.d_h, int(self.causal)]
         float_list += self.Wq.flatten().tolist()
         float_list += self.Wk.flatten().tolist()
         float_list += self.Wv.flatten().tolist()
@@ -114,6 +102,7 @@ class MHA(Layer):
         self.lr = float_list.pop(0)
         self.H = int_list.pop(0)
         self.d_h = int_list.pop(0)
+        self.causal = bool(int_list.pop(0))
         d = self.input_shape[0]
 
         self.Wq = np.array(float_list[: self.H * self.d_h * d]).reshape((self.H, self.d_h, d))

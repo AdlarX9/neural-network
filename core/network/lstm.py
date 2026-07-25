@@ -29,7 +29,7 @@ class LSTMNetwork(TextNetwork):
         for layer in self.layers:
             if isinstance(layer, Recurrent):
                 layer.reset_data()
-        one_hot_beginning = self.get_one_hot(self.tokenize(beginning))
+        one_hot_beginning = self.get_embedded(self.tokenize(beginning))
         one_hot_prediction = self.compute(one_hot_beginning)
         prediction = self.untokenize(self.get_tokens(one_hot_prediction))
         return prediction

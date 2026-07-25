@@ -6,8 +6,6 @@ import re
 
 
 class ByteTokenizer(Tokenizer):
-    _PRETOKENIZE_PATTERN = re.compile(r"\s+|[A-Za-zÀ-ÖØ-öø-ÿ]+|\d+|[^A-Za-zÀ-ÖØ-öø-ÿ\d\s]+", re.UNICODE)
-
     def __init__(self: ByteTokenizer, vocab_size: int = 32_768) -> None:
         if vocab_size < 256:
             raise ValueError("vocab_size must be at least 256")
@@ -17,35 +15,22 @@ class ByteTokenizer(Tokenizer):
         self._token_bytes: list[bytes] = [bytes([i]) for i in range(256)]
         self._merge_ranks: dict[tuple[int, int], int] = {}
 
-    def _pretokenize(self: ByteTokenizer, text: str) -> list[bytes]:
-        return [match.group(0).encode("utf-8") for match in self._PRETOKENIZE_PATTERN.finditer(text)]
-
     def build_vocab(self: "ByteTokenizer", corpus: str) -> None:
         self.V = {(i,): i for i in range(256)}
         self.R = []
         self._token_bytes = [bytes([i]) for i in range(256)]
         self._merge_ranks = {}
-        if not corpus:
-            return
-        if self.vocab_size == 256:
-            return
-        pieces = self._pretokenize(corpus)
-        if not pieces:
-            return
-        sequences: list[list[int]] = []
-        for piece in pieces:
-            if piece:
-                sequences.append(list(piece))
-        if not sequences:
-            return
+
+        numbers = list(corpus.encode("utf-8"))
+        sequences = [numbers]
+
         prev: list[list[int]] = []
         next_: list[list[int]] = []
         alive: list[bytearray] = []
+
         pair_counts: Counter[tuple[int, int]] = Counter()
-        pair_occurrences: dict[
-            tuple[int, int],
-            set[tuple[int, int]],
-        ] = {}
+        pair_occurrences: dict[tuple[int, int], set[tuple[int, int]]] = {}
+
         for sequence_id, sequence in enumerate(sequences):
             length = len(sequence)
             sequence_prev = [i - 1 for i in range(length)]
@@ -196,15 +181,16 @@ class ByteTokenizer(Tokenizer):
         show = bool(len(text) > 100_000)
         if not text:
             return []
-        pieces = self._pretokenize(text)
+        numbers = list(text.encode("utf-8"))
+        sequences = [numbers]
         result: list[int] = []
-        for idx, piece in enumerate(pieces):
-            if not piece:
+        for idx, sequence in enumerate(sequences):
+            if not sequence:
                 continue
             if show:
-                progress = idx / len(pieces) * 100
+                progress = idx / len(sequences) * 100
                 print("Tokenizing progress: " f"{progress:.2f}%", end="\r")
-            sequence = list(piece)
+            sequence = list(sequence)
             length = len(sequence)
             if length == 1:
                 result.append(sequence[0])
@@ -368,3 +354,19 @@ class ByteTokenizer(Tokenizer):
             left_id = self.V[left]
             right_id = self.V[right]
             self._merge_ranks[(left_id, right_id)] = merge_index
+
+    def create_file(self: ByteTokenizer) -> None:
+        with open("./tokens.txt", "w", encoding="utf-8") as file:
+            for token, idx in self.V.items():
+                try:
+                    file.write(str(idx) + " " * (6 - len(str(idx))) + bytes(token).decode("utf-8") + "\n")
+                except:
+                    file.write("not possible\n")
+    
+    def see_tokenization(self: ByteTokenizer, sentence: str) -> None:
+        tokens = self.tokenize(sentence)
+        for token in tokens:
+            try:
+                print(self._token_bytes[token].decode('utf-8'))
+            except:
+                print('not possible')

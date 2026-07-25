@@ -21,11 +21,11 @@ def shape_learning() -> None:
         return data
 
     neuron_numbers = [2, 40, 40, 40, 40, 40, 40, 1]
-    mlp = MLP(neuron_numbers)
+    mlp = MLP(neuron_numbers, 0.001)
     name = "shape_learning"
     mlp.load(name)
 
-    batch = 1000
+    batch = 600
     data = get_data(batch)
     mlp.train(data=data, batch=batch)
     mlp.save(name)

@@ -15,7 +15,7 @@ def _generate_completion(gpt: GPT, prompt: str, word_count: int) -> tuple[str, s
         prediction = gpt.predict_next_token(context)
         predictions += prediction
         context += prediction
-    completed_sentence = prompt + " " + predictions
+    completed_sentence = (prompt + " " + predictions).replace("  ", " ")
     return predictions, completed_sentence
 
 
