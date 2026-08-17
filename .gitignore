@@ -4,4 +4,4 @@ __pycache__
 data/numbers
 data/text
 venv
-*.network
+data/models/*.json

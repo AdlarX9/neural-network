@@ -28,17 +28,11 @@ class RMSNorm(Layer):
         self.gamma -= self.lr * np.sum(gradient * self.input / self.rms, axis=1, keepdims=True)
         return new_gradient
 
-    def get_data(self: RMSNorm) -> tuple[list[int], list[float], list[str]]:
-        int_list, float_list, str_list = super().get_data()
-        float_list += self.gamma.flatten().tolist()
-        return int_list, float_list, str_list
+    def get_data(self: RMSNorm) -> dict:
+        data = super().get_data()
+        data["gamma"] = self.gamma.flatten().tolist()
+        return data
 
-    def load_from_data(
-        self: RMSNorm, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.input_shape = tuple(int_list[:2])
-        del int_list[:2]
-        self.lr = float_list.pop(0)
-
-        self.gamma = np.array(float_list[: self.input_shape[0]]).reshape((self.input_shape[0], 1))
-        del float_list[: self.input_shape[0]]
+    def load_from_data(self: RMSNorm, data: dict) -> None:
+        super().load_from_data(data)
+        self.gamma = np.array(data["gamma"]).reshape(self.input_shape[0], 1)

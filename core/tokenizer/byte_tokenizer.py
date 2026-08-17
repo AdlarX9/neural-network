@@ -285,72 +285,30 @@ class ByteTokenizer(Tokenizer):
             byte_values.extend(self._token_bytes[token_id])
         return bytes(byte_values).decode("utf-8")
 
-    def get_data(self: ByteTokenizer) -> tuple[list[int], list[float], list[str]]:
-        int_list: list[int] = []
-        int_list.append(self.vocab_size)
-        int_list.append(len(self.R))
-        for left, right in self.R:
-            int_list.append(len(left))
-            int_list.extend(left)
-            int_list.append(len(right))
-            int_list.extend(right)
-        int_list.append(len(self.V))
-        for key, value in self.V.items():
-            int_list.append(value)
-            int_list.append(len(key))
-            int_list.extend(key)
-        return (int_list, [], [])
+    def get_data(self: ByteTokenizer) -> dict:
+        data = {
+            "vocab_size": self.vocab_size,
+            "V": [[list(token), idx] for token, idx in self.V.items()],
+            "R": [[list(left), list(right)] for left, right in self.R],
+        }
+        return data
 
-    def load_from_data(
-        self: ByteTokenizer,
-        int_list: list[int],
-        float_list: list[float],
-        string_list: list[str],
-    ) -> None:
-        self.V = {}
-        self.R = []
+    def load_from_data(self: ByteTokenizer, data: dict) -> None:
+        self.vocab_size = data["vocab_size"]
+        self.V = {tuple(token): idx for token, idx in data["V"]}
+        self.R = [(tuple(left), tuple(right)) for left, right in data["R"]]
         self._token_bytes = []
         self._merge_ranks = {}
-        idx = 0
-        self.vocab_size = int_list[idx]
-        idx += 1
-        r_count = int_list[idx]
-        idx += 1
-        for _ in range(r_count):
-            left_len = int_list[idx]
-            idx += 1
-            left = tuple(int_list[idx : idx + left_len])
-            idx += left_len
-            right_len = int_list[idx]
-            idx += 1
-            right = tuple(int_list[idx : idx + right_len])
-            idx += right_len
-            self.R.append((left, right))
 
-        v_count = int_list[idx]
-        idx += 1
-        for _ in range(v_count):
-            value = int_list[idx]
-            idx += 1
-            key_len = int_list[idx]
-            idx += 1
-            key = tuple(int_list[idx : idx + key_len])
-            idx += key_len
-            self.V[key] = value
         max_token_id = max(
             self.V.values(),
             default=255,
         )
         self._token_bytes = [b"" for _ in range(max_token_id + 1)]
-
         for key, token_id in self.V.items():
             self._token_bytes[token_id] = bytes(key)
-        self._merge_ranks = {}
 
-        for merge_index, (
-            left,
-            right,
-        ) in enumerate(self.R):
+        for merge_index, (left, right) in enumerate(self.R):
             left_id = self.V[left]
             right_id = self.V[right]
             self._merge_ranks[(left_id, right_id)] = merge_index
@@ -362,11 +320,11 @@ class ByteTokenizer(Tokenizer):
                     file.write(str(idx) + " " * (6 - len(str(idx))) + bytes(token).decode("utf-8") + "\n")
                 except:
                     file.write("not possible\n")
-    
+
     def see_tokenization(self: ByteTokenizer, sentence: str) -> None:
         tokens = self.tokenize(sentence)
         for token in tokens:
             try:
-                print(self._token_bytes[token].decode('utf-8'))
+                print(self._token_bytes[token].decode("utf-8"))
             except:
-                print('not possible')
+                print("not possible")

@@ -13,12 +13,13 @@ import math
 class Embedding(Layer):
     def __init__(self: Embedding, tokenizer: Tokenizer | None = None, dim: int = 100) -> None:
         Layer.__init__(self)
+        self.dim: int = dim
         self.tokenizer = ByteTokenizer()
         if tokenizer is not None:
             self.tokenizer = tokenizer
+            self.set_input_shape((self.tokenizer.length(), -1))
         else:
             return
-        self.dim: int = dim
         self.W: NDArray[np.float64] = np.random.normal(
             -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.dim, self.tokenizer.length())
         )
@@ -137,37 +138,27 @@ class Embedding(Layer):
     def untokenize(self: Embedding, tokens: list[int]) -> str:
         return self.tokenizer.untokenize(tokens)
 
-    def get_data(self: Embedding) -> tuple[list[int], list[float], list[str]]:
-        int_list, float_list, str_list = self.tokenizer.get_data()
-        int_list += list(self.input_shape) + list(self.output_shape) + [self.dim, self.tokenizer.length()]
-        float_list += [self.lr] + self.W.flatten().tolist() + self.W_prime.flatten().tolist()
-        str_list.append(self.tokenizer.__class__.__name__)
-        return int_list, float_list, str_list
+    def get_data(self: Embedding) -> dict:
+        data = super().get_data()
+        data["dim"] = self.dim
+        data["W"] = self.W.flatten().tolist()
+        data["W_prime"] = self.W_prime.flatten().tolist()
+        tokenizer_data = self.tokenizer.get_data()
+        tokenizer_data["class"] = self.tokenizer.__class__.__name__
+        data["tokenizer"] = tokenizer_data
+        return data
 
-    def load_from_data(
-        self: Embedding,
-        int_list: list[int],
-        float_list: list[float],
-        string_list: list[str],
-    ) -> None:
-        tokenizer_length = int_list.pop()
-        self.dim = int_list.pop()
-        length = tokenizer_length * self.dim
-        self.output_shape = tuple(int_list[-2:])
-        del int_list[-2:]
-        self.input_shape = tuple(int_list[-2:])
-        del int_list[-2:]
-        self.W_prime = np.array(float_list[-length:]).reshape((tokenizer_length, self.dim))
-        del float_list[-length:]
-        self.W = np.array(float_list[-length:]).reshape((self.dim, tokenizer_length))
-        del float_list[-length:]
-        self.lr = float_list.pop()
-        class_name = string_list.pop()
-        if class_name == "ByteTokenizer":
+    def load_from_data(self: Embedding, data: dict) -> None:
+        super().load_from_data(data)
+        self.dim = data["dim"]
+        self.W = np.array(data["W"]).reshape((self.dim, self.input_shape[0]))
+        self.W_prime = np.array(data["W_prime"]).reshape((self.dim, self.input_shape[0]))
+        tokenizer_class = data["tokenizer"]["class"]
+        if tokenizer_class == "ByteTokenizer":
             self.tokenizer = ByteTokenizer()
-            self.tokenizer.load_from_data(int_list, float_list, string_list)
-        elif class_name == "WordTokenizer":
+            self.tokenizer.load_from_data(data["tokenizer"])
+        elif tokenizer_class == "WordTokenizer":
             self.tokenizer = WordTokenizer()
-            self.tokenizer.load_from_data(int_list, float_list, string_list)
+            self.tokenizer.load_from_data(data["tokenizer"])
         else:
             raise MemoryError

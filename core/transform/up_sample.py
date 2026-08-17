@@ -18,13 +18,11 @@ class UpSample(Layer):
         W = Wout // self.factor
         return gradient.reshape(C, H, self.factor, W, self.factor).sum(axis=(2, 4))
 
-    def get_data(self: UpSample) -> tuple[list[int], list[float], list[str]]:
-        int_list, float_list, str_list = super().get_data()
-        int_list.append(self.factor)
-        return int_list, float_list, str_list
+    def get_data(self: UpSample) -> dict:
+        data = super().get_data()
+        data["factor"] = self.factor
+        return data
 
-    def load_from_data(
-        self: UpSample, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.factor = int_list.pop()
-        return super().load_from_data(int_list, float_list, string_list)
+    def load_from_data(self: UpSample, data: dict) -> None:
+        super().load_from_data(data)
+        self.factor = data["factor"]

@@ -26,7 +26,7 @@ class TextNetwork(Network):
 
     def get_one_hot(self: TextNetwork, entry: list[int]) -> NDArray[np.float64]:
         return self.embedding.get_one_hot(entry)
-    
+
     def get_embedded(self: TextNetwork, entry: list[int]) -> NDArray[np.float64]:
         return self.embedding.get_embedded(entry)
 
@@ -53,38 +53,32 @@ class TextNetwork(Network):
         for i in range(len(data)):
             if show:
                 progress = i / len(data) * 100
-                print('One Hot progress: ' f"{progress:.2f}%", end='\r')
+                print("One Hot progress: " f"{progress:.2f}%", end="\r")
             entry = self.get_embedded(data[i][0])
             answer = self.get_one_hot(data[i][1])
             new_data.append((entry, answer))
         if show:
-            print('One Hot progress: 100.00%')
+            print("One Hot progress: 100.00%")
         del data
         return super().train(new_data, batch, visualization)
-    
+
     def print(self: TextNetwork, sentence: str) -> None:
         tokens = self.tokenize(sentence)
         for token in tokens:
             try:
                 if isinstance(self.embedding.tokenizer, ByteTokenizer):
-                    print(self.embedding.tokenizer._token_bytes[token].decode('utf-8'))
+                    print(self.embedding.tokenizer._token_bytes[token].decode("utf-8"))
             except:
-                print('error')
+                print("error")
 
-    def get_data(self: TextNetwork) -> tuple[list[int], list[float], list[str]]:
+    def get_data(self: TextNetwork) -> dict:
         self.layers.append(self.embedding)
-        lists = super().get_data()
+        data = super().get_data()
         self.layers.pop()
-        return lists
+        return data
 
-    def load_from_data(
-        self: TextNetwork,
-        int_list: list[int],
-        float_list: list[float],
-        string_list: list[str],
-        layer_types: dict[str, type[Layer]] = {},
-    ) -> None:
-        super().load_from_data(int_list, float_list, string_list, layer_types)
+    def load_from_data(self: TextNetwork, data: dict, layer_types: dict[str, type[Layer]] = {}) -> None:
+        super().load_from_data(data, layer_types)
         embedding: Embedding | Layer = self.layers.pop()
         if not isinstance(embedding, Embedding):
             raise MemoryError

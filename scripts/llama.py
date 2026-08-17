@@ -18,24 +18,20 @@ def build_data(
 
 def llama():
     # Build Embedding
-    tokenizer = ByteTokenizer()
-    embedding = Embedding(tokenizer, 256)
+    tokenizer = ByteTokenizer(8192)
+    embedding = Embedding(tokenizer, 96)
     embedding_name = "llama_embedding"
     if not embedding.load(embedding_name):
         megatext = scrap_text(1_000_000, filename="scrapped-0")
         embedding.build_vocab(megatext)
         embedding.set_input_shape((tokenizer.length(), -1))
         embedding.set_lr(1)
-        megatokens = embedding.tokenize(megatext)
-        del megatext
-        embedding.cbow_training(text=megatokens[:100_000], window=8, batch=1)
         embedding.save(embedding_name)
-        del megatokens
 
     # Build LLaMA
     gpt_name = "llama"
-    head_numbers = [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
-    lr = 0.0001
+    head_numbers = [4, 4, 4, 4, 4, 4]
+    lr = 0.0008
     gpt = LLaMA(
         head_numbers=head_numbers,
         embedding=embedding,

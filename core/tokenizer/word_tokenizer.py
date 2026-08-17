@@ -38,17 +38,9 @@ class WordTokenizer(Tokenizer):
             words.append(word)
         return " ".join(words)
 
-    def get_data(self: WordTokenizer) -> tuple[list[int], list[float], list[str]]:
-        str_list = list(self.V.keys())
-        int_list = list(self.V.values())
-        return int_list, [], str_list
+    def get_data(self: WordTokenizer) -> dict:
+        data = {"V": self.V}
+        return data
 
-    def load_from_data(
-        self: WordTokenizer,
-        int_list: list[int],
-        float_list: list[float],
-        string_list: list[str],
-    ) -> None:
-        self.V = {}
-        for i in range(len(int_list)):
-            self.V[string_list[i]] = int_list[i]
+    def load_from_data(self: WordTokenizer, data: dict) -> None:
+        self.V = data["V"]

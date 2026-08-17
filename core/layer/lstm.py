@@ -138,11 +138,17 @@ class LSTM(Layer):
 
         # Compute new gradients
         self.gradient_h = (
-            self.Uf.T @ derivate_f + self.Ui.T @ derivate_i + self.Uo.T @ derivate_o + self.Uc.T @ derivate_c_prime
+            self.Uf.T @ derivate_f
+            + self.Ui.T @ derivate_i
+            + self.Uo.T @ derivate_o
+            + self.Uc.T @ derivate_c_prime
         )
         self.gradient_c = dc * f
         new_gradient = (
-            self.Wf.T @ derivate_f + self.Wi.T @ derivate_i + self.Wo.T @ derivate_o + self.Wc.T @ derivate_c_prime
+            self.Wf.T @ derivate_f
+            + self.Wi.T @ derivate_i
+            + self.Wo.T @ derivate_o
+            + self.Wc.T @ derivate_c_prime
         )
 
         # Learn weights
@@ -161,56 +167,45 @@ class LSTM(Layer):
 
         return new_gradient
 
-    def get_data(self: LSTM) -> tuple[list[int], list[float], list[str]]:
-        int_list, float_list, str_list = super().get_data()
-        float_list += self.Wf.flatten().tolist()
-        float_list += self.Wi.flatten().tolist()
-        float_list += self.Wo.flatten().tolist()
-        float_list += self.Wc.flatten().tolist()
-        float_list += self.Uf.flatten().tolist()
-        float_list += self.Ui.flatten().tolist()
-        float_list += self.Uo.flatten().tolist()
-        float_list += self.Uc.flatten().tolist()
-        float_list += self.bf.flatten().tolist()
-        float_list += self.bi.flatten().tolist()
-        float_list += self.bo.flatten().tolist()
-        float_list += self.bc.flatten().tolist()
-        return int_list, float_list, str_list
+    def get_data(self: LSTM) -> dict:
+        data = super().get_data()
+        data["n"] = self.n
 
-    def load_from_data(
-        self: LSTM, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.input_shape = tuple(int_list[:2])
-        self.n = self.input_shape[0]
-        del int_list[:2]
-        self.lr = float_list[0]
-        float_list.pop(0)
-        self.h = np.zeros((self.n, 1))
-        self.c = np.zeros((self.n, 1))
+        data["Wf"] = self.Wf.flatten().tolist()
+        data["Wi"] = self.Wi.flatten().tolist()
+        data["Wo"] = self.Wo.flatten().tolist()
+        data["Wc"] = self.Wc.flatten().tolist()
 
-        self.Wf = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
-        self.Wi = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
-        self.Wo = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
-        self.Wc = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
+        data["Uf"] = self.Uf.flatten().tolist()
+        data["Ui"] = self.Ui.flatten().tolist()
+        data["Uo"] = self.Uo.flatten().tolist()
+        data["Uc"] = self.Uc.flatten().tolist()
 
-        self.Uf = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
-        self.Ui = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
-        self.Uo = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
-        self.Uc = np.array(float_list[: self.n**2]).reshape((self.n, self.n))
-        del float_list[: self.n**2]
+        data["bf"] = self.bf.flatten().tolist()
+        data["bi"] = self.bi.flatten().tolist()
+        data["bo"] = self.bo.flatten().tolist()
+        data["bc"] = self.bc.flatten().tolist()
 
-        self.bf = np.array(float_list[: self.n]).reshape((self.n, 1))
-        del float_list[: self.n]
-        self.bi = np.array(float_list[: self.n]).reshape((self.n, 1))
-        del float_list[: self.n]
-        self.bo = np.array(float_list[: self.n]).reshape((self.n, 1))
-        del float_list[: self.n]
-        self.bc = np.array(float_list[: self.n]).reshape((self.n, 1))
-        del float_list[: self.n]
+        return data
+
+    def load_from_data(self: LSTM, data: dict) -> None:
+        super().load_from_data(data)
+        self.n = data["n"]
+        self.h = np.zeros(self.input_shape)
+        self.c = np.zeros(self.input_shape)
+
+        self.Wf = np.array(data["Wf"]).reshape(self.n, self.n)
+        self.Wi = np.array(data["Wi"]).reshape(self.n, self.n)
+        self.Wo = np.array(data["Wo"]).reshape(self.n, self.n)
+        self.Wc = np.array(data["Wc"]).reshape(self.n, self.n)
+
+        self.Uf = np.array(data["Uf"]).reshape(self.n, self.n)
+        self.Ui = np.array(data["Ui"]).reshape(self.n, self.n)
+        self.Uo = np.array(data["Uo"]).reshape(self.n, self.n)
+        self.Uc = np.array(data["Uc"]).reshape(self.n, self.n)
+
+        self.bf = np.array(data["bf"]).reshape(self.n, 1)
+        self.bi = np.array(data["bi"]).reshape(self.n, 1)
+        self.bo = np.array(data["bo"]).reshape(self.n, 1)
+        self.bc = np.array(data["bc"]).reshape(self.n, 1)
+        

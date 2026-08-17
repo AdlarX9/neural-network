@@ -76,20 +76,14 @@ class Network(Block):
             if visualization is None:
                 dashboard.close()
 
-    def get_data(self: Network) -> tuple[list[int], list[float], list[str]]:
+    def get_data(self: Network) -> dict:
         self.layers.append(self.exit_loss)
-        int_list, float_list, string_list = super().get_data()
+        data = super().get_data()
         self.layers.pop()
-        return int_list, float_list, string_list
+        return data
 
-    def load_from_data(
-        self: Network,
-        int_list: list[int],
-        float_list: list[float],
-        string_list: list[str],
-        layer_types: dict[str, type[Layer]] = {},
-    ) -> None:
-        super().load_from_data(int_list, float_list, string_list, layer_types)
+    def load_from_data(self: Network, data: dict, layer_types: dict[str, type[Layer]] = {}) -> None:
+        super().load_from_data(data, layer_types)
         if isinstance(self.layers[-1], ExitLoss):
             self.exit_loss = self.layers[-1]
             self.layers.pop()

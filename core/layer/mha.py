@@ -85,31 +85,27 @@ class MHA(Layer):
         self.Wo -= self.lr * gradient @ self.concat.T
         return d_X
 
-    def get_data(self: MHA) -> tuple[list[int], list[float], list[str]]:
-        int_list, float_list, str_list = super().get_data()
-        int_list += [self.H, self.d_h, int(self.causal)]
-        float_list += self.Wq.flatten().tolist()
-        float_list += self.Wk.flatten().tolist()
-        float_list += self.Wv.flatten().tolist()
-        float_list += self.Wo.flatten().tolist()
-        return int_list, float_list, str_list
+    def get_data(self: MHA) -> dict:
+        data = super().get_data()
+        data["H"] = self.H
+        data["d_h"] = self.d_h
+        data["causal"] = self.causal
 
-    def load_from_data(
-        self: MHA, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.input_shape = tuple(int_list[:2])
-        del int_list[:2]
-        self.lr = float_list.pop(0)
-        self.H = int_list.pop(0)
-        self.d_h = int_list.pop(0)
-        self.causal = bool(int_list.pop(0))
+        data["Wq"] = self.Wq.flatten().tolist()
+        data["Wk"] = self.Wk.flatten().tolist()
+        data["Wv"] = self.Wv.flatten().tolist()
+        data["Wo"] = self.Wo.flatten().tolist()
+
+        return data
+
+    def load_from_data(self: MHA, data: dict) -> None:
+        super().load_from_data(data)
+        self.H = data["H"]
+        self.d_h = data["d_h"]
+        self.causal = data["causal"]
+
         d = self.input_shape[0]
-
-        self.Wq = np.array(float_list[: self.H * self.d_h * d]).reshape((self.H, self.d_h, d))
-        del float_list[: self.H * self.d_h * d]
-        self.Wk = np.array(float_list[: self.H * self.d_h * d]).reshape((self.H, self.d_h, d))
-        del float_list[: self.H * self.d_h * d]
-        self.Wv = np.array(float_list[: self.H * self.d_h * d]).reshape((self.H, self.d_h, d))
-        del float_list[: self.H * self.d_h * d]
-        self.Wo = np.array(float_list[: d**2]).reshape((d, d))
-        del float_list[: d**2]
+        self.Wq = np.array(data["Wq"]).reshape(self.H, self.d_h, d)
+        self.Wk = np.array(data["Wk"]).reshape(self.H, self.d_h, d)
+        self.Wv = np.array(data["Wv"]).reshape(self.H, self.d_h, d)
+        self.Wo = np.array(data["Wo"]).reshape(d, d)

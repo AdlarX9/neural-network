@@ -26,18 +26,11 @@ class ProbaExit(ExitLoss):
     ) -> NDArray[np.float64]:
         return prediction - answer  # cross-entropy + softmax
 
-    def get_data(self: ProbaExit) -> tuple[list[int], list[float], list[str]]:
-        int_list, float_list, str_list = super().get_data()
-        axis = self.axis
-        if axis is None:
-            axis = -1
-        int_list.append(axis)
-        return int_list, float_list, str_list
+    def get_data(self: ProbaExit) -> dict:
+        data = super().get_data()
+        data["axis"] = self.axis
+        return data
 
-    def load_from_data(
-        self: ProbaExit, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.axis = int_list.pop()
-        if self.axis == -1:
-            self.axis = None
-        return super().load_from_data(int_list, float_list, string_list)
+    def load_from_data(self: ProbaExit, data: dict) -> None:
+        super().load_from_data(data)
+        self.axis = data["axis"]

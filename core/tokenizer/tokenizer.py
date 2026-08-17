@@ -29,14 +29,9 @@ class Tokenizer(ABC):
         return one_hot
 
     @abstractmethod
-    def get_data(self: Tokenizer) -> tuple[list[int], list[float], list[str]]:
+    def get_data(self: Tokenizer) -> dict:
         pass
 
     @abstractmethod
-    def load_from_data(
-        self: Tokenizer,
-        int_list: list[int],
-        float_list: list[float],
-        string_list: list[str],
-    ) -> None:
+    def load_from_data(self: Tokenizer, data: dict) -> None:
         pass

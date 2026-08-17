@@ -16,8 +16,8 @@ class BN(Layer):
 
     def set_input_shape(self: BN, input_shape: tuple[int, int, int]) -> tuple[int, int, int]:
         C, _, _ = input_shape
-        self.gamma = np.ones(C)
-        self.beta = np.zeros(C)
+        self.gamma = np.ones((C, 1))
+        self.beta = np.zeros((C, 1))
         self.output_shape = input_shape
         return self.output_shape
 
@@ -44,3 +44,14 @@ class BN(Layer):
         self.gamma -= self.lr * np.sum(gradient * self.x_hat, axis=(1, 2))
         self.beta -= self.lr * np.sum(gradient, axis=(1, 2))
         return dx
+
+    def get_data(self: BN) -> dict:
+        data = super().get_data()
+        data["gamma"] = self.gamma.flatten().tolist()
+        data["beta"] = self.beta.flatten().tolist()
+        return data
+
+    def load_from_data(self: BN, data: dict) -> None:
+        super().load_from_data(data)
+        self.gamma = np.array(data["gamma"]).reshape(self.input_shape[0], 1)
+        self.beta = np.array(data["beta"]).reshape(self.input_shape[0], 1)

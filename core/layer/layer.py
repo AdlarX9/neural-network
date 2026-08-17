@@ -49,16 +49,18 @@ class Layer:
             raise MemoryError
         return self.descend_gradient(gradient)
 
-    def get_data(self: Layer) -> tuple[list[int], list[float], list[str]]:
-        int_list = list(self.input_shape)
-        float_list = [self.lr]
-        return int_list, float_list, []
+    def get_data(self: Layer) -> dict:
+        data = {
+            "lr": self.lr,
+            "input_shape": self.input_shape,
+            "output_shape": self.output_shape,
+        }
+        return data
 
-    def load_from_data(
-        self: Layer, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.input_shape = tuple(int_list)
-        self.lr = float_list[0]
+    def load_from_data(self: Layer, data: dict) -> None:
+        self.lr = data["lr"]
+        self.input_shape = data["input_shape"]
+        self.output_shape = data["output_shape"]
 
     def save(self: Layer, name: str) -> None:
         from data import SaveHandler

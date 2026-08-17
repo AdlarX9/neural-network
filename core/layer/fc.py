@@ -29,14 +29,15 @@ class FC(Layer):
         self.W -= self.lr * (gradient @ self.input.T)
         return new_gradient
 
-    def get_data(self: FC) -> tuple[list[int], list[float], list[str]]:
-        int_list = list(self.input_shape) + [self.n, self.p]
-        float_list = [self.lr] + self.W.flatten().tolist()
-        return int_list, float_list, []
+    def get_data(self: FC) -> dict:
+        data = super().get_data()
+        data["n"] = self.n
+        data["p"] = self.p
+        data["W"] = self.W.flatten().tolist()
+        return data
 
-    def load_from_data(self: FC, int_list: list[int], float_list: list[float], string_list: list[str]) -> None:
-        self.input_shape = tuple(int_list[:2])
-        self.n = int_list[2]
-        self.p = int_list[3]
-        self.lr = float_list.pop(0)
-        self.W = np.array(float_list).reshape(self.n, self.p)
+    def load_from_data(self: FC, data: dict) -> None:
+        super().load_from_data(data)
+        self.n = data["n"]
+        self.p = data["p"]
+        self.W = np.array(data["W"]).reshape((self.n, self.p))

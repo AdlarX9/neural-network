@@ -68,13 +68,11 @@ class MaxPooling(Layer):
 
         return grad_padded
 
-    def get_data(self: MaxPooling) -> tuple[list[int], list[float], list[str]]:
-        int_list, float_list, string_list = super().get_data()
-        int_list.append(self.dim)
-        return int_list, float_list, string_list
+    def get_data(self: MaxPooling) -> dict:
+        data = super().get_data()
+        data["dim"] = self.dim
+        return data
 
-    def load_from_data(
-        self: MaxPooling, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.dim = int_list.pop(-1)
-        super().load_from_data(int_list, float_list, string_list)
+    def load_from_data(self: MaxPooling, data: dict) -> None:
+        super().load_from_data(data)
+        self.dim = data["dim"]

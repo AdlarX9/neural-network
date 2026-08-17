@@ -96,20 +96,19 @@ class Conv(Layer):
         self.kernels -= self.lr * Wgrad
         return col2im(dXcol, self.input.shape, self.K, self.S, self.P)
 
-    def get_data(self: Conv) -> tuple[list[int], list[float], list[str]]:
-        int_list = list(self.input_shape) + [self.K, self.S, self.N, self.P]
-        float_list = [self.lr]
-        float_list += self.kernels.flatten().tolist()
-        return int_list, float_list, []
+    def get_data(self: Conv) -> dict:
+        data = super().get_data()
+        data["K"] = self.K
+        data["S"] = self.S
+        data["N"] = self.N
+        data["P"] = self.P
+        data["kernels"] = self.kernels.flatten().tolist()
+        return data
 
-    def load_from_data(
-        self: Conv, int_list: list[int], float_list: list[float], string_list: list[str]
-    ) -> None:
-        self.input_shape = tuple(int_list[:3])
-        self.K = int_list[3]
-        self.S = int_list[4]
-        self.N = int_list[5]
-        self.P = int_list[6]
-        self.lr = float_list[0]
-        del float_list[0]
-        self.kernels = np.array(float_list).reshape(self.N, self.input_shape[0], self.K, self.K)
+    def load_from_data(self: Conv, data: dict) -> None:
+        super().load_from_data(data)
+        self.K = data["K"]
+        self.S = data["S"]
+        self.N = data["N"]
+        self.P = data["P"]
+        self.kernels = np.array(data["kernels"]).reshape(self.N, self.input_shape[0], self.K, self.K)
