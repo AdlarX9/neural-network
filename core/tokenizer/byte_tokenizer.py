@@ -6,6 +6,8 @@ import re
 
 
 class ByteTokenizer(Tokenizer):
+    _PRETOKENIZE_PATTERN = re.compile(r"\s+|[A-Za-zÀ-ÖØ-öø-ÿ]+|\d+|[^A-Za-zÀ-ÖØ-öø-ÿ\d\s]+", re.UNICODE)
+
     def __init__(self: ByteTokenizer, vocab_size: int = 32_768) -> None:
         if vocab_size < 256:
             raise ValueError("vocab_size must be at least 256")
@@ -15,22 +17,51 @@ class ByteTokenizer(Tokenizer):
         self._token_bytes: list[bytes] = [bytes([i]) for i in range(256)]
         self._merge_ranks: dict[tuple[int, int], int] = {}
 
-    def build_vocab(self: "ByteTokenizer", corpus: str) -> None:
+    def _pretokenize(self: ByteTokenizer, text: str) -> list[bytes]:
+        return [match.group(0).encode("utf-8") for match in self._PRETOKENIZE_PATTERN.finditer(text)]
+
+    def build_vocab(self: ByteTokenizer, corpus: str) -> None:
         self.V = {(i,): i for i in range(256)}
         self.R = []
         self._token_bytes = [bytes([i]) for i in range(256)]
         self._merge_ranks = {}
+        if not corpus:
+            return
+        if self.vocab_size == 256:
+            return
+        pieces = self._pretokenize(corpus)
+        if not pieces:
+            return
 
-        numbers = list(corpus.encode("utf-8"))
-        sequences = [numbers]
+        # Give a strong priority to full pre-tokenized pieces that are exactly 2 bytes
+        # so very common short words (for example "le", "la", "de" in French) are
+        # learned early instead of being skipped by longer composite merges.
+        forced_pair_bonus: Counter[tuple[int, int]] = Counter()
+        for piece in pieces:
+            if len(piece) == 2:
+                forced_pair_bonus[(piece[0], piece[1])] += 1
 
+        forced_pairs_top_n = 512
+        forced_pair_bonus = Counter(dict(forced_pair_bonus.most_common(forced_pairs_top_n)))
+        forced_pair_multiplier = 10_000
+
+        def pair_priority_score(pair: tuple[int, int]) -> int:
+            return pair_counts.get(pair, 0) + (forced_pair_bonus.get(pair, 0) * forced_pair_multiplier)
+
+        sequences: list[list[int]] = []
+        for piece in pieces:
+            if piece:
+                sequences.append(list(piece))
+        if not sequences:
+            return
         prev: list[list[int]] = []
         next_: list[list[int]] = []
         alive: list[bytearray] = []
-
         pair_counts: Counter[tuple[int, int]] = Counter()
-        pair_occurrences: dict[tuple[int, int], set[tuple[int, int]]] = {}
-
+        pair_occurrences: dict[
+            tuple[int, int],
+            set[tuple[int, int]],
+        ] = {}
         for sequence_id, sequence in enumerate(sequences):
             length = len(sequence)
             sequence_prev = [i - 1 for i in range(length)]
@@ -43,7 +74,11 @@ class ByteTokenizer(Tokenizer):
                 pair = (sequence[position], sequence[position + 1])
                 pair_counts[pair] += 1
                 pair_occurrences.setdefault(pair, set()).add((sequence_id, position))
-        heap = [(-count, left, right) for (left, right), count in pair_counts.items()]
+        heap = []
+        for (left, right), count in pair_counts.items():
+            pair = (left, right)
+            score = count + (forced_pair_bonus.get(pair, 0) * forced_pair_multiplier)
+            heap.append((-score, -count, left, right))
         heapq.heapify(heap)
         show_progress = len(corpus) >= 10_000
         next_token_id = 256
@@ -55,10 +90,15 @@ class ByteTokenizer(Tokenizer):
                 print("Vocabulary progress:" f" {progress:.2f}%", end="\r")
             best_pair = None
             while heap:
-                negative_count, left, right = heapq.heappop(heap)
+                negative_score, negative_count, left, right = heapq.heappop(heap)
                 pair = (left, right)
                 current_count = pair_counts.get(pair, 0)
-                if current_count == -negative_count and current_count > 0:
+                current_score = pair_priority_score(pair)
+                if (
+                    current_score == -negative_score
+                    and current_count == -negative_count
+                    and current_count > 0
+                ):
                     best_pair = pair
                     break
             if best_pair is None:
@@ -134,13 +174,17 @@ class ByteTokenizer(Tokenizer):
                         new_pair = (sequence[previous_position], merged_id)
                         pair_counts[new_pair] += 1
                         pair_occurrences.setdefault(new_pair, set()).add((sequence_id, previous_position))
-                        heapq.heappush(heap, (-pair_counts[new_pair], new_pair[0], new_pair[1]))
+                        new_count = pair_counts[new_pair]
+                        new_score = new_count + (forced_pair_bonus.get(new_pair, 0) * forced_pair_multiplier)
+                        heapq.heappush(heap, (-new_score, -new_count, new_pair[0], new_pair[1]))
 
                     if next_position != -1:
                         new_pair = (merged_id, sequence[next_position])
                         pair_counts[new_pair] += 1
                         pair_occurrences.setdefault(new_pair, set()).add((sequence_id, left_position))
-                        heapq.heappush(heap, (-pair_counts[new_pair], new_pair[0], new_pair[1]))
+                        new_count = pair_counts[new_pair]
+                        new_score = new_count + (forced_pair_bonus.get(new_pair, 0) * forced_pair_multiplier)
+                        heapq.heappush(heap, (-new_score, -new_count, new_pair[0], new_pair[1]))
             if pair_counts.get(best_pair, 0) <= 0:
                 pair_counts.pop(best_pair, None)
             if not pair_occurrences.get(best_pair):
@@ -181,16 +225,15 @@ class ByteTokenizer(Tokenizer):
         show = bool(len(text) > 100_000)
         if not text:
             return []
-        numbers = list(text.encode("utf-8"))
-        sequences = [numbers]
+        pieces = self._pretokenize(text)
         result: list[int] = []
-        for idx, sequence in enumerate(sequences):
-            if not sequence:
+        for idx, piece in enumerate(pieces):
+            if not piece:
                 continue
             if show:
-                progress = idx / len(sequences) * 100
+                progress = idx / len(pieces) * 100
                 print("Tokenizing progress: " f"{progress:.2f}%", end="\r")
-            sequence = list(sequence)
+            sequence = list(piece)
             length = len(sequence)
             if length == 1:
                 result.append(sequence[0])

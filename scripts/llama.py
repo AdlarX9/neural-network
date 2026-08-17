@@ -1,6 +1,6 @@
 from core import LLaMA, Embedding, ByteTokenizer
 from graphics import ConsoleVisualization
-from data import scrap_text
+from data import scrap_text, SaveHandler
 from graphics import chat
 import random
 
@@ -17,29 +17,27 @@ def build_data(
 
 
 def llama():
-    # Build Embedding
-    tokenizer = ByteTokenizer(8192)
-    embedding = Embedding(tokenizer, 96)
-    embedding_name = "llama_embedding"
-    if not embedding.load(embedding_name):
-        megatext = scrap_text(1_000_000, filename="scrapped-0")
-        embedding.build_vocab(megatext)
-        embedding.set_input_shape((tokenizer.length(), -1))
-        embedding.set_lr(1)
-        embedding.save(embedding_name)
-
-    # Build LLaMA
     gpt_name = "llama"
-    head_numbers = [4, 4, 4, 4, 4, 4]
     lr = 0.0008
-    gpt = LLaMA(
-        head_numbers=head_numbers,
-        embedding=embedding,
-        lr=lr,
-    )
-    gpt.load(gpt_name)
-    gpt.embedding = embedding
-    gpt.set_lr(lr)
+    if not SaveHandler().has(gpt_name):
+        # Build Embedding
+        tokenizer = ByteTokenizer(8192)
+        embedding = Embedding(tokenizer, 96)
+        text = scrap_text(1_000_000, filename="scrapped-0")
+        embedding.build_vocab(text)
+        embedding.set_input_shape((tokenizer.length(), -1))
+
+        # Build LLaMA
+        head_numbers = [4, 4, 4, 4, 4, 4]
+        gpt = LLaMA(
+            head_numbers=head_numbers,
+            embedding=embedding,
+            lr=lr,
+        )
+    else:
+        gpt = LLaMA()
+        gpt.load(gpt_name)
+        gpt.set_lr(lr)
 
     scrap_number = 0
     try:
@@ -56,11 +54,10 @@ def llama():
             # Train & Save
             def save():
                 gpt.save(gpt_name)
-                gpt.embedding.save(embedding_name)
 
             visualization = ConsoleVisualization()
-            step = 200
-            idx = 1
+            step = 500
+            idx = 0
             nbr_of_samples = len(data) // step
             while len(data) >= step:
                 visualization.title = "LLaMA Training Sample n°" + str(idx) + "/" + str(nbr_of_samples)
