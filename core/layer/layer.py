@@ -12,7 +12,7 @@ def check_shape(shape1: tuple[int, ...], shape2: tuple[int, ...]) -> bool:
     return True
 
 
-def check_shapes(shape1: tuple[tuple[int, ...]], shape2: tuple[tuple[int, ...]]) -> bool:
+def check_shapes(shape1: tuple[tuple[int, ...], ...], shape2: tuple[tuple[int, ...], ...]) -> bool:
     if len(shape1) != len(shape2):
         return False
     for i in range(len(shape1)):
@@ -24,16 +24,14 @@ def check_shapes(shape1: tuple[tuple[int, ...]], shape2: tuple[tuple[int, ...]])
 class Layer:
     def __init__(self: Layer, receive: tuple[int, ...] = (0,)) -> None:
         self.lr: float = 0.0
-        self.input_shape: tuple[tuple[int, ...]] = ((),)
-        self.output_shape: tuple[tuple] = ((),)
+        self.input_shape: tuple[tuple[int, ...], ...] = ((),)
+        self.output_shape: tuple = ((),)
         self.input: tuple[NDArray[np.float64], ...] | None = None
-        self._receive: int = 1
+        if not hasattr(self, '_receive'):
+            self._receive: int = 1
         if len(receive) != self._receive:
             raise ValueError(self._receive, receive)
         self.receive: tuple[int, ...] = receive
-        for i in range(1, self._receive):
-            if self.receive[i - 1] >= self.receive[i]:
-                raise ValueError
 
     def set_lr(self: Layer, lr: float) -> None:
         self.lr = lr
@@ -75,7 +73,7 @@ class Layer:
         if self.input_shape is None:
             raise MemoryError
         output = None
-        if self._receive == 1:
+        if len(self.output_shape) == 1:
             output = self.descend_gradient(gradient[0])
         else:
             output = self.descend_gradient(gradient)

@@ -5,8 +5,8 @@ from .activation import Activation
 
 
 class ReLU(Activation):
-    def __init__(self: ReLU) -> None:
-        super().__init__()
+    def __init__(self: ReLU, receive: tuple[int] = (0,)) -> None:
+        super().__init__(receive)
 
     def feed_forward(self: ReLU, entry: NDArray[np.float64]) -> NDArray[np.float64]:
         return np.maximum(0, entry)

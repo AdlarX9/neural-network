@@ -4,7 +4,7 @@ from .network.cnn import CNN
 from .network.lstm import LSTMNetwork
 from .network.llama import LLaMA
 from .block.swiglu import SwiGLU
-from .layer.mha import MHA
+from .block.rcmha import RCMHA
 from .block.one_hot_maker import OneHotMaker
 from .layer.embedding import Embedding
 from .network.gpt import GPT
@@ -16,9 +16,9 @@ from .transform.bn import BN
 from .transform.max_pooling import MaxPooling
 from .block.linear import Linear
 from .layer.biais import Biais
-from .layer.conv_biais import ConvBiais
 from .layer.conv import Conv
 from .layer.fc import FC
+from .layer.mhfc import MHFC
 from .transform.flatten import Flatten
 from .transform.global_average_pooling import GlobalAveragePooling
 from .exit.proba_exit import ProbaExit
@@ -32,5 +32,12 @@ from .transform.rms_norm import RMSNorm
 from .tokenizer.byte_tokenizer import ByteTokenizer
 from .tokenizer.word_tokenizer import WordTokenizer, normalize
 from .tokenizer.tokenizer import Tokenizer
+from .transform.matmul import Matmul
+from .transform.duplicate import Duplicate
+from .transform.transpose import Transpose
+from .activation.softmax import Softmax
+from .transform.rope import RoPE
+from .transform.causal import Causal
+from .transform.scale import Scale
 from .block.block import Block
 from .layer.layer import Layer, check_shapes

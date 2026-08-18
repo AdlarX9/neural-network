@@ -6,8 +6,8 @@ from ..utils.functions import sigmoid
 
 
 class SiLU(Activation):
-    def __init__(self: SiLU) -> None:
-        super().__init__()
+    def __init__(self: SiLU, receive: tuple[int] = (0,)) -> None:
+        super().__init__(receive)
 
     def feed_forward(self: SiLU, entry: NDArray[np.float64]) -> NDArray[np.float64]:
         return entry * sigmoid(entry)

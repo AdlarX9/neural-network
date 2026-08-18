@@ -1,8 +1,9 @@
 from __future__ import annotations
 from ..exit.exit_loss import ExitLoss
 from ..layer.conv import Conv
-from ..layer.conv_biais import ConvBiais
+from ..layer.biais import Biais
 from ..activation.relu import ReLU
+from ..transform.reshape import Reshape
 from ..transform.flatten import Flatten
 from .mlp import MLP
 from .network import Network
@@ -25,7 +26,7 @@ class CNN(Network):
         for cnn_param in cnn_params:
             N, K, S, P = cnn_param
             layers.append(Conv(N, K, S, P))
-            layers.append(ConvBiais())
+            layers.append(Biais())
             layers.append(ReLU())
         layers.append(Flatten())
         mlp = MLP(neuron_numbers=[N * K * S] + mlp_params)

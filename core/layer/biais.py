@@ -15,10 +15,23 @@ class Biais(Layer):
         return input_shape
 
     def feed_forward(self: Biais, entry: NDArray[np.float64]) -> NDArray[np.float64]:
-        return entry + self.B
+        if len(entry.shape) == 2:
+            return entry + self.B
+        elif len(entry.shape) == 3:
+            return entry + np.expand_dims(self.B, axis=2)
+        else:
+            raise ValueError
 
     def descend_gradient(self: Biais, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
-        self.B -= self.lr * np.sum(gradient, axis=1, keepdims=True)
+        if self.input is None:
+            raise MemoryError
+        if len(self.input[0].shape) == 2:
+            self.B -= self.lr * np.sum(gradient, axis=1, keepdims=True)
+        elif len(self.input[0].shape) == 3:
+            for i in range(self.B.shape[0]):
+                self.B[i, 0] -= self.lr * np.sum(gradient[i, :, :])
+        else:
+            raise ValueError
         return gradient
 
     def get_data(self: Biais) -> dict:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 from ..layer.layer import Layer
 from typing import Callable
+import numpy as np
+from numpy.typing import NDArray
 
 
 class Block(Layer):
@@ -14,21 +16,15 @@ class Block(Layer):
             layer.set_lr(lr)
 
     def _distribute(self: Block, quantity: tuple, function: Callable) -> tuple:
-        volume = quantity
+        volume = list(quantity)
         for layer in self.layers:
             entry = tuple([volume[idx] for idx in layer.receive])
-            output = tuple(function(layer, entry))
-            for i in reversed(layer.receive):
-                if i + 1 == len(volume):
-                    volume = volume[:i]
-                else:
-                    volume = volume[:i] + volume[i + 1 :]
-            separator = layer.receive[0]
-            if separator + 1 == len(volume):
-                volume += output
-            else:
-                volume = volume[:separator] + output + volume[separator:]
-        return volume
+            output = list(function(layer, entry))
+            for i in sorted(layer.receive, reverse=True):
+                del volume[i]
+            separator = min(layer.receive)
+            volume[separator:separator] = output
+        return tuple(volume)
 
     def set_input_shape(self: Block, input_shape: tuple) -> tuple:
         super().set_input_shape(input_shape)
@@ -42,28 +38,19 @@ class Block(Layer):
 
     def backprop(self: Block, gradient: tuple) -> tuple:
         super().backprop(gradient)
-        current_gradient = gradient
-        for i in reversed(range(len(self.layers))):
-            layer = self.layers[i]
-            if layer._receive == 1:
-                # Compatibilité avec le paradigme historique : un seul flux d’entrée / sortie.
-                current_gradient = layer.backprop(current_gradient)
-                continue
-
-            # Nouveau paradigme multimodal : on reconstruit le tuple de sorties branchées
-            # en conservant le comportement de la version legacy pour les réseaux classiques.
-            input_slice = current_gradient[layer.receive[0] : layer.receive[0] + len(layer.output_shape)]
+        volume = list(gradient)
+        for layer in reversed(self.layers):
+            beginning, end = min(layer.receive), min(layer.receive) + len(layer.output_shape)
+            input_slice = tuple(volume[beginning:end])
+            del volume[beginning:end]
             output = layer.backprop(input_slice)
-            rebuilt = list(current_gradient)
-            for j in reversed(range(layer._receive)):
-                pos = layer.receive[j]
-                loss = output[j]
-                if pos + 1 == len(rebuilt):
-                    rebuilt = rebuilt[:pos] + [loss]
-                else:
-                    rebuilt = rebuilt[:pos] + [loss] + rebuilt[pos + 1 :]
-            current_gradient = tuple(rebuilt)
-        return current_gradient
+            losses: list[tuple[int, NDArray[np.float64]]] = [
+                (el, output[idx]) for idx, el in enumerate(layer.receive)
+            ]
+            losses = sorted(losses, key=lambda x: x[0])
+            for pos, loss in losses:
+                volume.insert(pos, loss)
+        return tuple(volume)
 
     def get_data(self: Block) -> dict:
         data = super().get_data()

@@ -5,8 +5,8 @@ from numpy.typing import NDArray
 
 
 class Activation(Layer):
-    def __init__(self: Activation) -> None:
-        super().__init__()
+    def __init__(self: Activation, receive: tuple[int] = (0,)) -> None:
+        super().__init__(receive)
 
     def feed_forward(self: Activation, entry: NDArray[np.float64]) -> NDArray[np.float64]:
         return entry

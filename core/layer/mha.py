@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 from .layer import Layer
 import math
-from ..utils.functions import softmax, RoPE
+from ..utils.functions import softmax
 
 
 class MHA(Layer):
@@ -44,10 +44,10 @@ class MHA(Layer):
         Q = self.Wq @ x
         K = self.Wk @ x
         self.V = self.Wv @ x
-        Q = RoPE(Q)
-        self.K = RoPE(K)
-        self.Q = Q.swapaxes(1, 2)
-        S = self.Q @ self.K / math.sqrt(self.d_h)
+        self.Q = RoPE(Q)
+        K = RoPE(K)
+        self.K = K.swapaxes(1, 2)
+        S = self.K @ self.Q / math.sqrt(self.d_h)
         if self.causal:
             mask = np.tril(np.full(S.shape, -np.inf), k=-1)
             S += mask
@@ -69,8 +69,8 @@ class MHA(Layer):
         d_V = d_O @ self.A.swapaxes(1, 2)
         d_A = self.V.swapaxes(1, 2) @ d_O
         d_S: NDArray[np.float64] = self.A * (d_A - np.sum(d_A * self.A, axis=1, keepdims=True))
-        d_K = self.Q.swapaxes(1, 2) @ d_S / math.sqrt(self.d_h)
-        d_Q = d_S @ self.K.swapaxes(1, 2) / math.sqrt(self.d_h)
+        d_K = self.K.swapaxes(1, 2) @ d_S / math.sqrt(self.d_h)
+        d_Q = d_S @ self.Q.swapaxes(1, 2) / math.sqrt(self.d_h)
         d_Q = d_Q.swapaxes(1, 2)
         d_Q = RoPE(d_Q, -1)  # Rotation de -theta annule la rotation de theta
         d_K = RoPE(d_K, -1)  # Rotation de -theta annule la rotation de theta
