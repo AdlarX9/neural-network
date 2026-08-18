@@ -19,6 +19,7 @@ from .layer.biais import Biais
 from .layer.conv import Conv
 from .layer.fc import FC
 from .layer.mhfc import MHFC
+from .transform.reshape import Reshape
 from .transform.flatten import Flatten
 from .transform.global_average_pooling import GlobalAveragePooling
 from .exit.proba_exit import ProbaExit
@@ -26,8 +27,9 @@ from .exit.exit_loss import ExitLoss
 from .block.res import Res
 from .block.recurrent import Recurrent
 from .layer.lstm import LSTM
-from .block.adder import Adder
-from .block.multiplier import Multiplier
+from .transform.add import Add
+from .transform.multiply import Multiply
+from .transform.concat import Concat
 from .transform.rms_norm import RMSNorm
 from .tokenizer.byte_tokenizer import ByteTokenizer
 from .tokenizer.word_tokenizer import WordTokenizer, normalize

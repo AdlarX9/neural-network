@@ -22,3 +22,12 @@ class Softmax(Activation):
         if self.output is None:
             raise MemoryError
         return self.output * (gradient - np.sum(gradient * self.output, axis=self.axis, keepdims=True))
+
+    def get_data(self: Softmax) -> dict:
+        data = super().get_data()
+        data["axis"] = self.axis
+        return data
+
+    def load_from_data(self: Softmax, data: dict) -> None:
+        super().load_from_data(data)
+        self.axis = data["axis"]

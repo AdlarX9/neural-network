@@ -3,6 +3,7 @@ from graphics import ConsoleVisualization
 from data import scrap_text, SaveHandler
 from graphics import chat
 import random
+import math
 
 
 def build_data(
@@ -21,14 +22,14 @@ def llama():
     lr = 0.0008
     if not SaveHandler().has(gpt_name):
         # Build Embedding
-        tokenizer = ByteTokenizer(8192)
-        embedding = Embedding(tokenizer, 96)
+        tokenizer = ByteTokenizer()
+        embedding = Embedding(tokenizer, 256)
         text = scrap_text(1_000_000, filename="scrapped-0")
         embedding.build_vocab(text)
         embedding.set_input_shape(((tokenizer.length(), -1),))
 
         # Build LLaMA
-        head_numbers = [16, 16, 16, 16, 16, 16]
+        head_numbers = [8, 8, 8, 8, 8, 8, 8, 8]
         gpt = LLaMA(
             head_numbers=head_numbers,
             embedding=embedding,
@@ -39,8 +40,8 @@ def llama():
         gpt.load(gpt_name)
         gpt.set_lr(lr)
 
-    scrap_number = 0
-    displayed = False
+    scrap_number: int = 0
+    displayed: bool = False
     try:
         while True:
             # Build data
@@ -58,8 +59,8 @@ def llama():
 
             visualization = ConsoleVisualization()
             step = 500
-            idx = 0
-            nbr_of_samples = len(data) // step
+            idx = 1
+            nbr_of_samples = math.ceil(len(data) / step)
             while len(data) >= step:
                 visualization.title = "LLaMA Training Sample n°" + str(idx) + "/" + str(nbr_of_samples)
                 idx += 1

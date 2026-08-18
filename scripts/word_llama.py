@@ -18,7 +18,7 @@ def word_llama():
         embedding.build_vocab(sample)
         embedding.set_lr(0.1)
         embedding.cbow_training(sample, window=2, batch=4_000)
-        # embedding.save(embedding_name)
+        embedding.save(embedding_name)
 
     lr = 0.01
     gpt = LLaMA(
@@ -32,7 +32,7 @@ def word_llama():
     data = build_data(gpt)
     batch = 4_000
     gpt.train_tokens(data, batch)
-    # gpt.save(gpt_name)
+    gpt.save(gpt_name)
 
     predictions = gpt.compute_text(gpt.untokenize(gpt.tokenize(sample)[:-1]))
     print("Trained on:")

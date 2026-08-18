@@ -50,3 +50,14 @@ class RCMHA(Block):
         super().set_input_shape(input_shape)
         self.set_lr(self.lr)
         return self.output_shape
+
+    def get_data(self: RCMHA) -> dict:
+        data = super().get_data()
+        data["H"] = self.H
+        data["d_h"] = self.d_h
+        return data
+
+    def load_from_data(self: RCMHA, data: dict, layer_types: dict[str, type[Layer]] = {}) -> None:
+        super().load_from_data(data, layer_types)
+        self.H = data["H"]
+        self.d_h = data["d_h"]

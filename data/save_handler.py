@@ -3,36 +3,10 @@ import core
 import os
 import json
 from pathlib import Path
+import inspect
 
 layer_types = {
-    "Layer": core.Layer,
-    "Conv": core.Conv,
-    "FC": core.FC,
-    "Biais": core.Biais,
-    "ReLU": core.ReLU,
-    "ExitLoss": core.ExitLoss,
-    "ProbaExit": core.ProbaExit,
-    "Network": core.Network,
-    "MLP": core.MLP,
-    "CNN": core.CNN,
-    "LSTMNetwork": core.LSTMNetwork,
-    "BN": core.BN,
-    "MaxPooling": core.MaxPooling,
-    "Res": core.Res,
-    "Embedding": core.Embedding,
-    "Recurrent": core.Recurrent,
-    "LSTM": core.LSTM,
-    "OneHotMaker": core.OneHotMaker,
-    "Adder": core.Adder,
-    "Multiplier": core.Multiplier,
-    "Activation": core.Activation,
-    "GlobalAveragePooling": core.GlobalAveragePooling,
-    "SiLU": core.SiLU,
-    "SwiGLU": core.SwiGLU,
-    "Linear": core.Linear,
-    "LLaMA": core.LLaMA,
-    "Block": core.Block,
-    "RMSNorm": core.RMSNorm,
+    name: obj for name, obj in inspect.getmembers(core, inspect.isclass) if issubclass(obj, core.Layer)
 }
 
 

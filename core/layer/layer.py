@@ -29,7 +29,7 @@ class Layer:
         self.input: tuple[NDArray[np.float64], ...] | None = None
         if not hasattr(self, '_receive'):
             self._receive: int = 1
-        if len(receive) != self._receive:
+        if self._receive != -1 and len(receive) != self._receive:
             raise ValueError(self._receive, receive)
         self.receive: tuple[int, ...] = receive
 
@@ -37,7 +37,7 @@ class Layer:
         self.lr = lr
 
     def set_input_shape(self: Layer, input_shape: tuple) -> tuple:
-        if len(input_shape) != self._receive:
+        if self._receive != -1 and len(input_shape) != self._receive:
             raise ValueError(input_shape, self._receive, self.receive)
         self.input_shape = input_shape
         self.output_shape = self.input_shape
