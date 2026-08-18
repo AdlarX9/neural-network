@@ -23,7 +23,7 @@ class LLaMA(GPT):
             return
         layers: list[Layer] = []
         for H in head_numbers:
-            layers.append(Res(Block(RMSNorm(), MHA(H, causal=True))))
-            layers.append(Res(Block(RMSNorm(), SwiGLU(int(8 / 3 * embedding.dim)), Linear(embedding.dim))))
+            layers.append(Res(Block([RMSNorm(), MHA(H, causal=True)])))
+            layers.append(Res(Block([RMSNorm(), SwiGLU(int(8 / 3 * embedding.dim)), Linear(embedding.dim)])))
         layers += [RMSNorm(), OneHotMaker(embedding)]
         super().__init__(layers, (embedding.dim, -1), lr, ProbaExit(axis=0), embedding)

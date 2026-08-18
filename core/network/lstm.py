@@ -19,7 +19,7 @@ class LSTMNetwork(TextNetwork):
         layers = []
         input_shape = (0,)
         if embedding is not None:
-            layers = [Recurrent(LSTM()), OneHotMaker(embedding)]
+            layers = [Recurrent([LSTM()]), OneHotMaker(embedding)]
             input_shape = (embedding.dim, -1)
         super().__init__(
             layers=layers, input_shape=input_shape, lr=lr, exit_loss=exit_loss, embedding=embedding
@@ -30,6 +30,6 @@ class LSTMNetwork(TextNetwork):
             if isinstance(layer, Recurrent):
                 layer.reset_data()
         one_hot_beginning = self.get_embedded(self.tokenize(beginning))
-        one_hot_prediction = self.compute(one_hot_beginning)
-        prediction = self.untokenize(self.get_tokens(one_hot_prediction))
+        one_hot_prediction = self((one_hot_beginning,))
+        prediction = self.untokenize(self.get_tokens(one_hot_prediction[0]))
         return prediction

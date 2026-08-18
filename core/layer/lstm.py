@@ -6,8 +6,8 @@ from ..utils.functions import sigmoid
 
 
 class LSTM(Layer):
-    def __init__(self: LSTM) -> None:
-        super().__init__()
+    def __init__(self: LSTM, receive: int = 0) -> None:
+        super().__init__((receive,))
         self.data: list[dict[str, NDArray[np.float64]]] = []
         self.n = 0
         self.h = np.array([[]])
@@ -51,8 +51,8 @@ class LSTM(Layer):
         self.gradient_h = None
         self.gradient_c = None
 
-    def set_input_shape(self: LSTM, input_shape: tuple) -> tuple:
-        n, p = input_shape
+    def set_input_shape(self: LSTM, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
+        n, p = input_shape[0]
         self.n = n
         if p != 1:
             raise ValueError
@@ -191,8 +191,8 @@ class LSTM(Layer):
     def load_from_data(self: LSTM, data: dict) -> None:
         super().load_from_data(data)
         self.n = data["n"]
-        self.h = np.zeros(self.input_shape)
-        self.c = np.zeros(self.input_shape)
+        self.h = np.zeros(self.input_shape[0])
+        self.c = np.zeros(self.input_shape[0])
 
         self.Wf = np.array(data["Wf"]).reshape(self.n, self.n)
         self.Wi = np.array(data["Wi"]).reshape(self.n, self.n)
@@ -208,4 +208,3 @@ class LSTM(Layer):
         self.bi = np.array(data["bi"]).reshape(self.n, 1)
         self.bo = np.array(data["bo"]).reshape(self.n, 1)
         self.bc = np.array(data["bc"]).reshape(self.n, 1)
-        

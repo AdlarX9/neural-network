@@ -1,4 +1,5 @@
 from __future__ import annotations
+from core.block.block import Block
 from core.exit.exit_loss import ExitLoss
 from core.layer.layer import Layer
 from .network import Network
@@ -13,13 +14,17 @@ class TextNetwork(Network):
     def __init__(
         self: TextNetwork,
         layers: list[Layer] = [],
-        input_shape: tuple = (0,),
+        input_shape: tuple[int, ...] = (0,),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
         embedding: Embedding = Embedding(),
     ) -> None:
-        super().__init__(layers, input_shape, lr, exit_loss)
         self.embedding: Embedding = embedding
+        super().__init__(layers, input_shape, lr, exit_loss)
+    
+    def set_lr(self: TextNetwork, lr: float) -> None:
+        super().set_lr(lr)
+        self.embedding.set_lr(lr)
 
     def tokenize(self: TextNetwork, text: str) -> list[int]:
         return self.embedding.tokenize(text)
@@ -38,8 +43,8 @@ class TextNetwork(Network):
 
     def compute_text(self: TextNetwork, entry: str, memorize: bool = False) -> str:
         one_hot = self.get_embedded(self.tokenize(entry))
-        result = self.compute(one_hot, memorize)
-        output = self.untokenize(self.get_tokens(result))
+        result = self((one_hot,), memorize)
+        output = self.untokenize(self.get_tokens(result[0]))
         return output
 
     def train_tokens(

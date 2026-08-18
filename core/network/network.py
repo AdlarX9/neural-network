@@ -12,18 +12,24 @@ class Network(Block):
     def __init__(
         self: Network,
         layers: list[Layer] = [],
-        input_shape: tuple = (0,),
+        input_shape: tuple[int, ...] = (0,),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
+        receive: tuple[int] = (0,),
     ) -> None:
-        super().__init__(*layers)
+        super().__init__(layers, receive)
         self.set_lr(lr)
-        self.set_input_shape(input_shape)
         self.exit_loss: ExitLoss = exit_loss
+        self.set_input_shape((input_shape,))
 
-    def compute(self: Network, entry: NDArray[np.float64], memorize: bool = False) -> NDArray[np.float64]:
-        volume = super().compute(entry, memorize)
-        volume = self.exit_loss.feed_forward(volume)
+    def set_input_shape(self: Network, input_shape: tuple) -> tuple:
+        output_shape = super().set_input_shape(input_shape)
+        self.output_shape = self.exit_loss.set_input_shape(output_shape)
+        return self.output_shape
+
+    def __call__(self: Network, entry: tuple, memorize: bool = False) -> tuple:
+        volume = super().__call__(entry, memorize)
+        volume = self.exit_loss(volume, memorize)
         return volume
 
     def accuracy(self: Network, prediction: NDArray[np.float64], answer: NDArray[np.float64]) -> float:
@@ -36,11 +42,15 @@ class Network(Block):
     def single_train(
         self: Network, entry: NDArray[np.float64], answer: NDArray[np.float64]
     ) -> tuple[float, float]:
-        prediction = self.compute(entry, memorize=True)
+        """
+        On assume qu'on est face à un cas classique : une seule entrée => une seule sortie
+        On refera ces algorithmes dans une prochaine issue
+        """
+        prediction = self((entry,), memorize=True)[0]  # On passe aux tuples pour les entrées
         loss = self.exit_loss.get_loss(prediction, answer)
         gradient = self.exit_loss.get_gradient(prediction, answer)
         correct = self.accuracy(prediction, answer)
-        super().backprop(gradient)
+        super().backprop((gradient,))  # On passe aux tuples pour les gradients
         return loss, correct
 
     def train(
@@ -49,6 +59,10 @@ class Network(Block):
         batch: int = 100,
         visualization: ConsoleVisualization | None = None,
     ) -> None:
+        """
+        On assume qu'on est face à un cas classique : une seule entrée => une seule sortie
+        On refera ces algorithmes dans une prochaine issue
+        """
         dashboard = visualization if visualization is not None else ConsoleVisualization(batch, len(data))
         dashboard.total_batches = batch
         dashboard.total_items = len(data)

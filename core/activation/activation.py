@@ -17,4 +17,4 @@ class Activation(Layer):
     def descend_gradient(self: Activation, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
         if self.input is None:
             raise MemoryError
-        return gradient * self.compute_derivative(self.input)
+        return gradient * self.compute_derivative(self.input[0])

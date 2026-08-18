@@ -5,8 +5,8 @@ from ..layer.layer import Layer
 
 
 class UpSample(Layer):
-    def __init__(self: UpSample, factor: int = 2) -> None:
-        super().__init__()
+    def __init__(self: UpSample, factor: int = 2, receive: tuple[int] = (0,)) -> None:
+        super().__init__(receive)
         self.factor = factor
 
     def feed_forward(self: UpSample, entry: NDArray[np.float64]) -> NDArray[np.float64]:

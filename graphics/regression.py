@@ -16,7 +16,7 @@ def regression(
     teacher: Callable,
 ) -> None:
     network_dimensions = network.get_dimensions()
-    if network_dimensions[0][0] != 2 or network_dimensions[1][0] != 1:
+    if network_dimensions[0][0][0] != 2 or network_dimensions[1][0][0] != 1:
         return
 
     root = tk.Tk()
@@ -31,7 +31,7 @@ def regression(
             x = (i + 0.5) / GRID_SIZE
             y = (j + 0.5) / GRID_SIZE
             inp = np.array([x, y]).reshape(-1, 1)
-            prediction = network.compute(inp)
+            prediction = network((inp,))[0]
             correction[j, i] = teacher(x, y)
             val = prediction[0, 0]
             values[j, i] = val

@@ -6,10 +6,10 @@ from numpy.typing import NDArray
 
 
 class Adder(Block):
-    def __init__(self: Adder, *layers: Layer) -> None:
-        super().__init__(*layers)
+    def __init__(self: Adder, layers: list[Layer] = [], receive: tuple[int] = (0,)) -> None:
+        super().__init__(layers, receive)
 
-    def set_input_shape(self: Adder, input_shape: tuple) -> tuple:
+    def set_input_shape(self: Adder, input_shape: tuple[tuple]) -> tuple[tuple]:
         self.input_shape = input_shape
         if len(self.layers) == 0:
             return input_shape
@@ -24,21 +24,25 @@ class Adder(Block):
                 )
         return self.output_shape
 
-    def compute(self: Adder, entry: NDArray[np.float64], memorize: bool) -> NDArray[np.float64]:
-        output = None
+    def __call__(
+        self: Adder, entry: tuple[NDArray[np.float64]], memorize: bool
+    ) -> tuple[NDArray[np.float64]]:
+        output: NDArray[np.float64] | None = None
         if memorize:
             self.input = entry
         for layer in self.layers:
             if output is None:
-                output = layer.compute(entry, memorize)
+                output = layer(entry, memorize)[0]
             else:
-                output += layer.compute(entry, memorize)
+                output += layer(entry, memorize)[0]
         if output is None:
-            return np.zeros(self.output_shape)
-        return output
+            return (np.zeros(self.output_shape[0]),)
+        return (output,)
 
-    def backprop(self: Adder, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
-        new_gradient = np.zeros_like(self.input)
+    def backprop(self: Adder, gradient: tuple[NDArray[np.float64]]) -> tuple[NDArray[np.float64]]:
+        if self.input is None:
+            raise MemoryError
+        new_gradient = np.zeros_like(self.input[0])
         for layer in self.layers:
-            new_gradient += layer.backprop(gradient)
-        return new_gradient
+            new_gradient += layer.backprop(gradient)[0]
+        return (new_gradient,)

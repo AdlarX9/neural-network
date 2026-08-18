@@ -5,13 +5,13 @@ from .layer import Layer
 
 
 class Biais(Layer):
-    def __init__(self: Biais) -> None:
-        super().__init__()
+    def __init__(self: Biais, receive: int = 0) -> None:
+        super().__init__((receive,))
         self.B = np.array([[]])
 
-    def set_input_shape(self: Biais, input_shape: tuple[int, int]) -> tuple[int, int]:
-        self.input_shape = input_shape
-        self.B = np.random.normal(0, np.sqrt(2 / input_shape[0]), size=(input_shape[0], 1))  # He
+    def set_input_shape(self: Biais, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
+        super().set_input_shape(input_shape)
+        self.B = np.random.normal(0, np.sqrt(2 / input_shape[0][0]), size=(input_shape[0][0], 1))  # He
         return input_shape
 
     def feed_forward(self: Biais, entry: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -28,4 +28,4 @@ class Biais(Layer):
 
     def load_from_data(self: Biais, data: dict) -> None:
         super().load_from_data(data)
-        self.B = np.array(data["B"]).reshape(self.input_shape[0], 1)
+        self.B = np.array(data["B"]).reshape(self.input_shape[0][0], 1)

@@ -150,7 +150,7 @@ class ChatWindow:
         )
         self.word_count.grid(row=3, column=0, sticky=tk.W, pady=(6, 0), ipady=5)
         self.word_count.delete(0, tk.END)
-        self.word_count.insert(0, "20")
+        self.word_count.insert(0, "80")
 
         generate_button = tk.Button(
             inner,

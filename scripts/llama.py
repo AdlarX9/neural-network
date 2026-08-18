@@ -25,10 +25,10 @@ def llama():
         embedding = Embedding(tokenizer, 96)
         text = scrap_text(1_000_000, filename="scrapped-0")
         embedding.build_vocab(text)
-        embedding.set_input_shape((tokenizer.length(), -1))
+        embedding.set_input_shape(((tokenizer.length(), -1),))
 
         # Build LLaMA
-        head_numbers = [4, 4, 4, 4, 4, 4]
+        head_numbers = [16, 16, 16, 16, 16, 16]
         gpt = LLaMA(
             head_numbers=head_numbers,
             embedding=embedding,
@@ -40,6 +40,7 @@ def llama():
         gpt.set_lr(lr)
 
     scrap_number = 0
+    displayed = False
     try:
         while True:
             # Build data
@@ -78,6 +79,8 @@ def llama():
             save()
     except KeyboardInterrupt:
         # Chat
+        displayed = True
         chat(gpt)
     finally:
-        chat(gpt)
+        if not displayed:
+            chat(gpt)

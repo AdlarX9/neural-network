@@ -52,8 +52,8 @@ def col2im(
 
 
 class Conv(Layer):
-    def __init__(self: Conv, N: int = 0, K: int = 0, S: int = 0, P: int = 0):
-        super().__init__()
+    def __init__(self: Conv, N: int = 0, K: int = 0, S: int = 0, P: int = 0, receive: int = 0):
+        super().__init__((receive,))
         self.K = K  # Watching field dimension
         self.S = S  # Stride
         self.N = N
@@ -66,17 +66,16 @@ class Conv(Layer):
             else:
                 raise ValueError("K must not be even:", self.K)
 
-    def set_input_shape(self: Conv, input_shape: tuple[int, int, int]) -> tuple[int, int, int]:
-        c, H, W = input_shape
-        self.input_shape = input_shape
+    def set_input_shape(self: Conv, input_shape: tuple[tuple[int, int, int]]) -> tuple[tuple[int, int, int]]:
+        c, H, W = input_shape[0]
+        super().set_input_shape(input_shape)
         self.kernels = np.random.normal(0, np.sqrt(2 / (c * self.K**2)), size=(self.N, c, self.K, self.K))
         Hout = (H + 2 * self.P - self.K) // self.S + 1
         Wout = (W + 2 * self.P - self.K) // self.S + 1
-        self.output_shape = (self.N, Hout, Wout)
+        self.output_shape = ((self.N, Hout, Wout),)
         return self.output_shape
 
     def feed_forward(self: Conv, entry: NDArray[np.float64]) -> NDArray[np.float64]:
-        self.input = entry
         Xcol = im2col(entry, self.K, self.S, self.P)
         self.Xcol = Xcol
         W = self.kernels.reshape(self.N, -1)
@@ -94,7 +93,7 @@ class Conv(Layer):
         Wgrad = Wgrad.reshape(self.kernels.shape)
         dXcol = self.kernels.reshape(self.N, -1).T @ delta
         self.kernels -= self.lr * Wgrad
-        return col2im(dXcol, self.input.shape, self.K, self.S, self.P)
+        return col2im(dXcol, self.input[0].shape, self.K, self.S, self.P)
 
     def get_data(self: Conv) -> dict:
         data = super().get_data()
@@ -111,4 +110,4 @@ class Conv(Layer):
         self.S = data["S"]
         self.N = data["N"]
         self.P = data["P"]
-        self.kernels = np.array(data["kernels"]).reshape(self.N, self.input_shape[0], self.K, self.K)
+        self.kernels = np.array(data["kernels"]).reshape(self.N, self.input_shape[0][0], self.K, self.K)

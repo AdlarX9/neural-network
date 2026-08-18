@@ -5,13 +5,13 @@ from .layer import Layer
 
 
 class ConvBiais(Layer):
-    def __init__(self: ConvBiais) -> None:
-        super().__init__()
+    def __init__(self: ConvBiais, receive: int = 0) -> None:
+        super().__init__((receive,))
         self.B = np.array([[]])
 
-    def set_input_shape(self: ConvBiais, input_shape: tuple[int, int, int]) -> tuple[int, int, int]:
-        self.input_shape = input_shape
-        self.B = np.random.normal(0, np.sqrt(2 / input_shape[0]), size=(input_shape[0], 1))  # He
+    def set_input_shape(self: ConvBiais, input_shape: tuple[tuple[int, int, int]]) -> tuple[tuple[int, int, int]]:
+        super().set_input_shape(input_shape)
+        self.B = np.random.normal(0, np.sqrt(2 / input_shape[0][0]), size=(input_shape[0][0], 1))  # He
         return input_shape
 
     def feed_forward(self: ConvBiais, entry: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -29,4 +29,4 @@ class ConvBiais(Layer):
 
     def load_from_data(self: ConvBiais, data: dict) -> None:
         super().load_from_data(data)
-        self.B = np.array(data["B"]).reshape(self.input_shape[0], 1)
+        self.B = np.array(data["B"]).reshape(self.input_shape[0][0], 1)

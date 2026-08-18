@@ -13,12 +13,12 @@ class GPT(TextNetwork):
         input_shape: tuple = (0,),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
-        embedding: Embedding = Embedding()
+        embedding: Embedding = Embedding(),
     ) -> None:
         super().__init__(layers, input_shape, lr, exit_loss, embedding)
 
     def predict_next_token(self: GPT, beginning: str) -> str:
         one_hot = self.get_embedded(self.tokenize(beginning))
-        result = self.compute(one_hot)
-        prediction = self.untokenize(self.get_tokens(result)[-1:])
+        result = self((one_hot,))
+        prediction = self.untokenize(self.get_tokens(result[0])[-1:])
         return prediction

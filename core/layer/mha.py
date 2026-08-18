@@ -7,8 +7,8 @@ from ..utils.functions import softmax, RoPE
 
 
 class MHA(Layer):
-    def __init__(self: MHA, H: int = 1, causal: bool = False) -> None:
-        super().__init__()
+    def __init__(self: MHA, H: int = 1, causal: bool = False, receive: int = 0) -> None:
+        super().__init__((receive,))
         self.H = H
         self.Wq = np.array([[[]]])
         self.Wk = np.array([[[]]])
@@ -25,9 +25,9 @@ class MHA(Layer):
         self.A = np.array([[[]]])
         self.S = np.array([[[]]])
 
-    def set_input_shape(self: MHA, input_shape: tuple) -> tuple:
+    def set_input_shape(self: MHA, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
         super().set_input_shape(input_shape)
-        d, _ = input_shape
+        d, _ = input_shape[0]
         if int(d / self.H) != d / self.H:
             raise ValueError("Dimensions mismatch")
         self.d_h = d // self.H
@@ -61,7 +61,7 @@ class MHA(Layer):
     def descend_gradient(self: MHA, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
         if self.input is None:
             raise MemoryError
-        _, T = self.input.shape
+        _, T = self.input[0].shape
 
         # Compute gradients
         d_concat = self.Wo.T @ gradient
@@ -79,9 +79,10 @@ class MHA(Layer):
         )
 
         # Learn weights
-        self.Wq -= self.lr * d_Q @ self.input.T
-        self.Wk -= self.lr * d_K @ self.input.T
-        self.Wv -= self.lr * d_V @ self.input.T
+        transposed = self.input[0].T
+        self.Wq -= self.lr * d_Q @ transposed
+        self.Wk -= self.lr * d_K @ transposed
+        self.Wv -= self.lr * d_V @ transposed
         self.Wo -= self.lr * gradient @ self.concat.T
         return d_X
 
@@ -104,7 +105,7 @@ class MHA(Layer):
         self.d_h = data["d_h"]
         self.causal = data["causal"]
 
-        d = self.input_shape[0]
+        d = self.input_shape[0][0]
         self.Wq = np.array(data["Wq"]).reshape(self.H, self.d_h, d)
         self.Wk = np.array(data["Wk"]).reshape(self.H, self.d_h, d)
         self.Wv = np.array(data["Wv"]).reshape(self.H, self.d_h, d)

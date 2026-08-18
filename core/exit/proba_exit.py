@@ -7,9 +7,9 @@ from ..utils.functions import softmax
 
 
 class ProbaExit(ExitLoss):
-    def __init__(self: ProbaExit, axis: int | None = None):
+    def __init__(self: ProbaExit, axis: int | None = None, receive: int = 0):
         self.axis = axis
-        super().__init__()
+        super().__init__(receive)
 
     def feed_forward(self: ProbaExit, entry: NDArray[np.float64]) -> NDArray[np.float64]:
         return softmax(entry, axis=self.axis)

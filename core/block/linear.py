@@ -5,5 +5,5 @@ from ..layer.biais import Biais
 
 
 class Linear(Block):
-    def __init__(self: Linear, neuron_number: int = 1) -> None:
-        super().__init__(FC(neuron_number), Biais())  # Add Identity
+    def __init__(self: Linear, neuron_number: int = 1, receive: tuple = (0,)) -> None:
+        super().__init__([FC(neuron_number), Biais()], receive)  # Add Identity

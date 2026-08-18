@@ -5,18 +5,18 @@ from .layer import Layer
 
 
 class FC(Layer):
-    def __init__(self: FC, n: int = 0) -> None:
-        super().__init__()
+    def __init__(self: FC, n: int = 0, receive: int = 0) -> None:
+        super().__init__((receive,))
         self.n: int = n
         self.p: int = 0
         self.W = np.array([[]])
 
-    def set_input_shape(self: FC, input_shape: tuple[int, int]) -> tuple[int, int]:
-        self.input_shape = input_shape
-        p, q = input_shape
+    def set_input_shape(self: FC, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
+        super().set_input_shape(input_shape)
+        p, q = input_shape[0]
         self.p = p
         self.W = np.random.normal(0, np.sqrt(2 / self.n), size=(self.n, p))  # He
-        self.output_shape = (self.n, q)
+        self.output_shape = ((self.n, q),)
         return self.output_shape
 
     def feed_forward(self: FC, entry: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -26,7 +26,7 @@ class FC(Layer):
         if self.input is None:
             raise MemoryError
         new_gradient = self.W.T @ gradient
-        self.W -= self.lr * (gradient @ self.input.T)
+        self.W -= self.lr * (gradient @ self.input[0].T)
         return new_gradient
 
     def get_data(self: FC) -> dict:

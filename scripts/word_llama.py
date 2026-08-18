@@ -10,9 +10,9 @@ def build_data(gpt: TextNetwork) -> list[tuple[list[int], list[int]]]:
 
 def word_llama():
     gpt_name = "word_llama"
-    head_numbers = [1]
+    head_numbers = [6]
 
-    embedding = Embedding(WordTokenizer(), 4)
+    embedding = Embedding(WordTokenizer(), 12)
     embedding_name = "word_llama_embedding"
     if not embedding.load(embedding_name):
         embedding.build_vocab(sample)

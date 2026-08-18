@@ -6,8 +6,8 @@ from ..layer.layer import Layer
 
 
 class MaxPooling(Layer):
-    def __init__(self: MaxPooling, dim: int) -> None:
-        super().__init__()
+    def __init__(self: MaxPooling, dim: int = 1, receive: tuple[int] = (0,)) -> None:
+        super().__init__(receive)
         self.dim = dim
         self._max_pos: NDArray[np.int64] | None = None  # positions des max dans chaque fenêtre
 
@@ -41,7 +41,7 @@ class MaxPooling(Layer):
         if self.input is None or self._max_pos is None:
             raise MemoryError("feed_forward must be called before descend_gradient")
 
-        c, n, p = self.input.shape
+        c, n, p = self.input[0].shape
         d = self.dim
         out_h, out_w = gradient.shape[1], gradient.shape[2]
 
@@ -49,7 +49,7 @@ class MaxPooling(Layer):
         pad_w = out_w * d - p
 
         # Gradient dans les blocs paddés
-        grad_blocks = np.zeros((c, out_h, out_w, d * d), dtype=self.input.dtype)
+        grad_blocks = np.zeros((c, out_h, out_w, d * d), dtype=self.input[0].dtype)
 
         # Indices vectorisés pour placer chaque gradient sur la position du max
         ci = np.arange(c)[:, None, None]

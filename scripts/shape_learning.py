@@ -25,7 +25,7 @@ def shape_learning() -> None:
     name = "shape_learning"
     mlp.load(name)
 
-    batch = 600
+    batch = 400
     data = get_data(batch)
     mlp.train(data=data, batch=batch)
     mlp.save(name)

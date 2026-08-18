@@ -5,8 +5,8 @@ from numpy.typing import NDArray
 
 
 class BN(Layer):
-    def __init__(self: BN):
-        super().__init__()
+    def __init__(self: BN, receive: tuple[int] = (0,)):
+        super().__init__(receive)
         self.gamma: NDArray[np.float64] = np.array([[]])
         self.beta: NDArray[np.float64] = np.array([[]])
         self.epsilon = 1e-5
@@ -14,11 +14,11 @@ class BN(Layer):
         self.var = np.var([[]])
         self.x_hat = np.var([[]])
 
-    def set_input_shape(self: BN, input_shape: tuple[int, int, int]) -> tuple[int, int, int]:
-        C, _, _ = input_shape
+    def set_input_shape(self: BN, input_shape: tuple[tuple[int, int, int]]) -> tuple[tuple[int, int, int]]:
+        C, _, _ = input_shape[0]
         self.gamma = np.ones((C, 1))
         self.beta = np.zeros((C, 1))
-        self.output_shape = input_shape
+        super().set_input_shape(input_shape)
         return self.output_shape
 
     def feed_forward(self: BN, entry: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -53,5 +53,5 @@ class BN(Layer):
 
     def load_from_data(self: BN, data: dict) -> None:
         super().load_from_data(data)
-        self.gamma = np.array(data["gamma"]).reshape(self.input_shape[0], 1)
-        self.beta = np.array(data["beta"]).reshape(self.input_shape[0], 1)
+        self.gamma = np.array(data["gamma"]).reshape(self.input_shape[0][0], 1)
+        self.beta = np.array(data["beta"]).reshape(self.input_shape[0][0], 1)

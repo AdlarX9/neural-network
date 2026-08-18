@@ -5,13 +5,13 @@ from ..layer.layer import Layer
 
 
 class Flatten(Layer):
-    def __init__(self: Flatten) -> None:
-        super().__init__()
+    def __init__(self: Flatten, receive: tuple[int] = (0,)) -> None:
+        super().__init__(receive)
 
-    def set_input_shape(self: Flatten, input_shape: tuple[int, int, int]) -> tuple[int, int]:
-        self.input_shape = input_shape
-        c, n, p = input_shape
-        self.output_shape = (c * n * p, 1)
+    def set_input_shape(self: Flatten, input_shape: tuple[tuple[int, int, int]]) -> tuple[tuple[int, int]]:
+        super().set_input_shape(input_shape)
+        c, n, p = input_shape[0]
+        self.output_shape = ((c * n * p, 1),)
         return self.output_shape
 
     def feed_forward(self: Flatten, entry: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -20,4 +20,4 @@ class Flatten(Layer):
     def descend_gradient(self: Flatten, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
         if self.input is None:
             raise MemoryError
-        return gradient.reshape(self.input.shape)
+        return gradient.reshape(self.input[0].shape)

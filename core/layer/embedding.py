@@ -11,13 +11,18 @@ import math
 
 
 class Embedding(Layer):
-    def __init__(self: Embedding, tokenizer: Tokenizer | None = None, dim: int = 100) -> None:
-        Layer.__init__(self)
+    def __init__(
+        self: Embedding,
+        tokenizer: Tokenizer | None = None,
+        dim: int = 100,
+        receive: int = 0,
+    ) -> None:
+        Layer.__init__(self, (receive,))
         self.dim: int = dim
         self.tokenizer = ByteTokenizer()
         if tokenizer is not None:
             self.tokenizer = tokenizer
-            self.set_input_shape((self.tokenizer.length(), -1))
+            self.set_input_shape(((self.tokenizer.length(), -1),))
         else:
             return
         self.W: NDArray[np.float64] = np.random.normal(
@@ -27,8 +32,8 @@ class Embedding(Layer):
             -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.tokenizer.length(), self.dim)
         )
 
-    def set_input_shape(self: Embedding, input_shape: tuple[int, int]) -> tuple[int, int]:
-        if len(input_shape) != 2 or input_shape[0] != self.tokenizer.length():
+    def set_input_shape(self: Embedding, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
+        if len(input_shape[0]) != 2 or input_shape[0][0] != self.tokenizer.length():
             raise ValueError(
                 "Expected dimension does not fit Tokenizer requiremenents:",
                 (self.tokenizer.length(), 1),
@@ -41,8 +46,8 @@ class Embedding(Layer):
         self.W_prime: NDArray[np.float64] = np.random.normal(
             -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.tokenizer.length(), self.dim)
         )
-        self.input_shape = input_shape
-        self.output_shape = (self.dim, self.input_shape[1])
+        super().set_input_shape(input_shape)
+        self.output_shape = ((self.dim, self.input_shape[0][1]),)
         return self.output_shape
 
     def feed_forward(self: Embedding, entry: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -52,7 +57,7 @@ class Embedding(Layer):
         if self.input is None:
             raise MemoryError
         new_gradient = self.W.T @ gradient
-        self.W -= self.lr * gradient @ self.input.T
+        self.W -= self.lr * gradient @ self.input[0].T
         return new_gradient
 
     def cbow_training(self: Embedding, text: str | list[int], window: int = 7, batch: int = 10) -> None:
@@ -105,7 +110,7 @@ class Embedding(Layer):
 
     def build_vocab(self: Embedding, text: str):
         self.tokenizer.build_vocab(text)
-        self.set_input_shape((self.tokenizer.length(), -1))
+        self.set_input_shape(((self.tokenizer.length(), -1),))
 
     def tokenize(self: Embedding, text: str) -> list[int]:
         return self.tokenizer.tokenize(text)
@@ -151,8 +156,8 @@ class Embedding(Layer):
     def load_from_data(self: Embedding, data: dict) -> None:
         super().load_from_data(data)
         self.dim = data["dim"]
-        self.W = np.array(data["W"]).reshape((self.dim, self.input_shape[0]))
-        self.W_prime = np.array(data["W_prime"]).reshape((self.dim, self.input_shape[0]))
+        self.W = np.array(data["W"]).reshape((self.dim, self.input_shape[0][0]))
+        self.W_prime = np.array(data["W_prime"]).reshape((self.dim, self.input_shape[0][0]))
         tokenizer_class = data["tokenizer"]["class"]
         if tokenizer_class == "ByteTokenizer":
             self.tokenizer = ByteTokenizer()
