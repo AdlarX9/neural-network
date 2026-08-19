@@ -24,7 +24,8 @@ class ProbaExit(ExitLoss):
     def get_gradient(
         self: ProbaExit, prediction: NDArray[np.float64], answer: NDArray[np.float64]
     ) -> NDArray[np.float64]:
-        return prediction - answer  # cross-entropy + softmax
+        _, p = prediction.shape
+        return (prediction - answer) / p  # cross-entropy + softmax
 
     def get_data(self: ProbaExit) -> dict:
         data = super().get_data()

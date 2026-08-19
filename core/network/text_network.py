@@ -21,7 +21,7 @@ class TextNetwork(Network):
     ) -> None:
         self.embedding: Embedding = embedding
         super().__init__(layers, input_shape, lr, exit_loss)
-    
+
     def set_lr(self: TextNetwork, lr: float) -> None:
         super().set_lr(lr)
         self.embedding.set_lr(lr)
@@ -40,6 +40,10 @@ class TextNetwork(Network):
 
     def untokenize(self: TextNetwork, tokens: list[int]) -> str:
         return self.embedding.untokenize(tokens)
+
+    def backprop(self: TextNetwork, gradient: tuple) -> tuple:
+        gradient = super().backprop(gradient)
+        return self.embedding.backprop(gradient)
 
     def compute_text(self: TextNetwork, entry: str, memorize: bool = False) -> str:
         one_hot = self.get_embedded(self.tokenize(entry))

@@ -8,17 +8,6 @@ if TYPE_CHECKING:
     from core import GPT
 
 
-def _generate_completion(gpt: GPT, prompt: str, word_count: int) -> tuple[str, str]:
-    context: str = prompt
-    predictions: str = ""
-    for _ in range(word_count):
-        prediction = gpt.predict_next_token(context)
-        predictions += prediction
-        context += prediction
-    completed_sentence = (prompt + " " + predictions).replace("  ", " ")
-    return predictions, completed_sentence
-
-
 class ChatWindow:
     def __init__(self, master: tk.Tk, gpt: GPT) -> None:
         self.master = master
@@ -229,7 +218,7 @@ class ChatWindow:
             return
 
         try:
-            _, completed_sentence = _generate_completion(self.gpt, prompt, word_count)
+            completed_sentence = self.gpt.generate(prompt, word_count)
         except Exception as exc:
             messagebox.showerror("Erreur de génération", str(exc))
             return

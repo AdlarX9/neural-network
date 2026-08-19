@@ -157,7 +157,7 @@ class Embedding(Layer):
         super().load_from_data(data)
         self.dim = data["dim"]
         self.W = np.array(data["W"]).reshape((self.dim, self.input_shape[0][0]))
-        self.W_prime = np.array(data["W_prime"]).reshape((self.dim, self.input_shape[0][0]))
+        self.W_prime = np.array(data["W_prime"]).reshape((self.input_shape[0][0], self.dim))
         tokenizer_class = data["tokenizer"]["class"]
         if tokenizer_class == "ByteTokenizer":
             self.tokenizer = ByteTokenizer()

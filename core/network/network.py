@@ -68,7 +68,7 @@ class Network(Block):
         dashboard.total_items = len(data)
         timestamp = time.time()
         try:
-            max_remember = 600
+            max_remember = 100
             correct_items: list[float] = []
             losses: list[float] = []
             for batch_index in range(1, batch + 1):
