@@ -12,12 +12,13 @@ from ..transform.rope import RoPE
 from ..transform.scale import Scale
 from ..transform.transpose import Transpose
 from ..activation.softmax import Softmax
+from ..utils.typing import ShapeFlow, Receive1, SaveData
 
 
 class RCMHA(Block):
     """Stands for RoPEd Causal Multi-Head Self-Attention"""
 
-    def __init__(self: RCMHA, H: int = 1, receive: tuple[int] = (0,)) -> None:
+    def __init__(self: RCMHA, H: int = 1, receive: Receive1 = (0,)) -> None:
         self.H: int = H
         self.d_h: int = 0
         super().__init__([], receive)
@@ -41,7 +42,7 @@ class RCMHA(Block):
         ]
         return layers
 
-    def set_input_shape(self: RCMHA, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
+    def set_input_shape(self: RCMHA, input_shape: ShapeFlow) -> ShapeFlow:
         d, _ = input_shape[0]
         if int(d / self.H) != d / self.H:
             raise ValueError("Dimensions mismatch:", d, self.H)
@@ -51,13 +52,13 @@ class RCMHA(Block):
         self.set_lr(self.lr)
         return self.output_shape
 
-    def get_data(self: RCMHA) -> dict:
+    def get_data(self: RCMHA) -> SaveData:
         data = super().get_data()
         data["H"] = self.H
         data["d_h"] = self.d_h
         return data
 
-    def load_from_data(self: RCMHA, data: dict, layer_types: dict[str, type[Layer]] = {}) -> None:
+    def load_from_data(self: RCMHA, data: SaveData, layer_types: dict[str, type[Layer]] = {}) -> None:
         super().load_from_data(data, layer_types)
         self.H = data["H"]
         self.d_h = data["d_h"]

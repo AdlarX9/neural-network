@@ -1,20 +1,18 @@
 from __future__ import annotations
-from core.block.block import Block
 from core.exit.exit_loss import ExitLoss
 from core.layer.layer import Layer
 from .network import Network
 from ..layer.embedding import Embedding
-import numpy as np
-from numpy.typing import NDArray
 from graphics import ConsoleVisualization
 from ..tokenizer.byte_tokenizer import ByteTokenizer
+from ..utils.typing import Shape, Tensor, TensorFlow, Tokens, TrainData, SaveData
 
 
 class TextNetwork(Network):
     def __init__(
         self: TextNetwork,
         layers: list[Layer] = [],
-        input_shape: tuple[int, ...] = (0,),
+        input_shape: Shape = (0,),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
         embedding: Embedding = Embedding(),
@@ -26,22 +24,22 @@ class TextNetwork(Network):
         super().set_lr(lr)
         self.embedding.set_lr(lr)
 
-    def tokenize(self: TextNetwork, text: str) -> list[int]:
+    def tokenize(self: TextNetwork, text: str) -> Tokens:
         return self.embedding.tokenize(text)
 
-    def get_one_hot(self: TextNetwork, entry: list[int]) -> NDArray[np.float64]:
+    def get_one_hot(self: TextNetwork, entry: Tokens) -> Tensor:
         return self.embedding.get_one_hot(entry)
 
-    def get_embedded(self: TextNetwork, entry: list[int]) -> NDArray[np.float64]:
+    def get_embedded(self: TextNetwork, entry: Tokens) -> Tensor:
         return self.embedding.get_embedded(entry)
 
-    def get_tokens(self: TextNetwork, entry: NDArray[np.float64]) -> list[int]:
+    def get_tokens(self: TextNetwork, entry: Tensor) -> Tokens:
         return self.embedding.get_tokens(entry)
 
-    def untokenize(self: TextNetwork, tokens: list[int]) -> str:
+    def untokenize(self: TextNetwork, tokens: Tokens) -> str:
         return self.embedding.untokenize(tokens)
 
-    def backprop(self: TextNetwork, gradient: tuple) -> tuple:
+    def backprop(self: TextNetwork, gradient: TensorFlow) -> TensorFlow:
         gradient = super().backprop(gradient)
         return self.embedding.backprop(gradient)
 
@@ -53,11 +51,11 @@ class TextNetwork(Network):
 
     def train_tokens(
         self: TextNetwork,
-        data: list[tuple[list[int], list[int]]],
+        data: list[tuple[Tokens, Tokens]],
         batch: int = 100,
         visualization: ConsoleVisualization | None = None,
     ) -> None:
-        new_data: list[tuple[NDArray[np.float64], NDArray[np.float64]]] = []
+        new_data: TrainData = []
         show = bool(len(data) >= 1000)
         for i in range(len(data)):
             if show:
@@ -80,13 +78,13 @@ class TextNetwork(Network):
             except:
                 print("error")
 
-    def get_data(self: TextNetwork) -> dict:
+    def get_data(self: TextNetwork) -> SaveData:
         self.layers.append(self.embedding)
         data = super().get_data()
         self.layers.pop()
         return data
 
-    def load_from_data(self: TextNetwork, data: dict, layer_types: dict[str, type[Layer]] = {}) -> None:
+    def load_from_data(self: TextNetwork, data: SaveData, layer_types: dict[str, type[Layer]] = {}) -> None:
         super().load_from_data(data, layer_types)
         embedding: Embedding | Layer = self.layers.pop()
         if not isinstance(embedding, Embedding):

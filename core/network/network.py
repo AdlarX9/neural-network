@@ -4,6 +4,7 @@ from numpy.typing import NDArray
 from ..layer.layer import Layer
 from ..exit.exit_loss import ExitLoss
 from ..block.block import Block
+from ..utils.typing import Shape, ShapeFlow, Tensor, TensorFlow, TrainData, SaveData, Receive1
 from graphics import ConsoleVisualization
 import time
 
@@ -12,36 +13,34 @@ class Network(Block):
     def __init__(
         self: Network,
         layers: list[Layer] = [],
-        input_shape: tuple[int, ...] = (0,),
+        input_shape: Shape = (0,),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
-        receive: tuple[int] = (0,),
+        receive: Receive1 = (0,),
     ) -> None:
         super().__init__(layers, receive)
         self.set_lr(lr)
         self.exit_loss: ExitLoss = exit_loss
         self.set_input_shape((input_shape,))
 
-    def set_input_shape(self: Network, input_shape: tuple) -> tuple:
+    def set_input_shape(self: Network, input_shape: ShapeFlow) -> ShapeFlow:
         output_shape = super().set_input_shape(input_shape)
         self.output_shape = self.exit_loss.set_input_shape(output_shape)
         return self.output_shape
 
-    def __call__(self: Network, entry: tuple, memorize: bool = False) -> tuple:
+    def __call__(self: Network, entry: TensorFlow, memorize: bool = False) -> TensorFlow:
         volume = super().__call__(entry, memorize)
         volume = self.exit_loss(volume, memorize)
         return volume
 
-    def accuracy(self: Network, prediction: NDArray[np.float64], answer: NDArray[np.float64]) -> float:
+    def accuracy(self: Network, prediction: Tensor, answer: Tensor) -> float:
         is_correct = []
         _, p = prediction.shape
         for i in range(p):
             is_correct.append(bool(np.argmax(prediction[:, i]) == np.argmax(answer[:, i])))
         return is_correct.count(True) / len(is_correct)
 
-    def single_train(
-        self: Network, entry: NDArray[np.float64], answer: NDArray[np.float64]
-    ) -> tuple[float, float]:
+    def single_train(self: Network, entry: Tensor, answer: Tensor) -> tuple[float, float]:
         """
         On assume qu'on est face à un cas classique : une seule entrée => une seule sortie
         On refera ces algorithmes dans une prochaine issue
@@ -55,7 +54,7 @@ class Network(Block):
 
     def train(
         self: Network,
-        data: list[tuple[NDArray[np.float64], NDArray[np.float64]]],
+        data: TrainData,
         batch: int = 100,
         visualization: ConsoleVisualization | None = None,
     ) -> None:
@@ -90,13 +89,13 @@ class Network(Block):
             if visualization is None:
                 dashboard.close()
 
-    def get_data(self: Network) -> dict:
+    def get_data(self: Network) -> SaveData:
         self.layers.append(self.exit_loss)
         data = super().get_data()
         self.layers.pop()
         return data
 
-    def load_from_data(self: Network, data: dict, layer_types: dict[str, type[Layer]] = {}) -> None:
+    def load_from_data(self: Network, data: SaveData, layer_types: dict[str, type[Layer]] = {}) -> None:
         super().load_from_data(data, layer_types)
         if isinstance(self.layers[-1], ExitLoss):
             self.exit_loss = self.layers[-1]

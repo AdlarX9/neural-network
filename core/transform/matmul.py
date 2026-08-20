@@ -1,15 +1,14 @@
 from __future__ import annotations
 from ..layer.layer import Layer
-import numpy as np
-from numpy.typing import NDArray
+from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Receive2
 
 
 class Matmul(Layer):
-    def __init__(self: Matmul, receive: tuple[int, int] = (0, 1)) -> None:
+    def __init__(self: Matmul, receive: Receive2 = (0, 1)) -> None:
         self._receive = 2
         super().__init__(receive)
 
-    def set_input_shape(self: Matmul, input_shape: tuple) -> tuple:
+    def set_input_shape(self: Matmul, input_shape: ShapeFlow) -> ShapeFlow:
         super().set_input_shape(input_shape)
         shape1 = input_shape[0]
         shape2 = input_shape[1]
@@ -26,9 +25,10 @@ class Matmul(Layer):
         if q != p:
             raise ValueError("Incompatible dimension for matrix multiplication:", shape1, shape2)
         if C is None:
-            self.output_shape = ((D, n, r),)
             if D is None:
                 self.output_shape = ((n, r),)
+            else:
+                self.output_shape = ((D, n, r),)
         else:
             self.output_shape = ((C, n, r),)
             if D is not None and D != C:
@@ -37,14 +37,14 @@ class Matmul(Layer):
 
     def feed_forward(
         self: Matmul,
-        entry: tuple[NDArray[np.float64], NDArray[np.float64]],
-    ) -> NDArray[np.float64]:
+        entry: TensorFlow,
+    ) -> Tensor:
         return entry[0] @ entry[1]
 
     def descend_gradient(
         self: Matmul,
-        gradient: NDArray[np.float64],
-    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        gradient: Tensor,
+    ) -> TensorFlow:
         if self.input is None:
             raise MemoryError
         l0 = len(self.input[0].shape)

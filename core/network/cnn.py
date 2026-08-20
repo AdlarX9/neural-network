@@ -3,7 +3,6 @@ from ..exit.exit_loss import ExitLoss
 from ..layer.conv import Conv
 from ..layer.biais import Biais
 from ..activation.relu import ReLU
-from ..transform.reshape import Reshape
 from ..transform.flatten import Flatten
 from .mlp import MLP
 from .network import Network

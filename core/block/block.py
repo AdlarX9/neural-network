@@ -1,12 +1,11 @@
 from __future__ import annotations
 from ..layer.layer import Layer
-from typing import Callable
-import numpy as np
-from numpy.typing import NDArray
+from typing import Any, Callable
+from ..utils.typing import ShapeFlow, TensorFlow, Tensor, SaveData, Receive
 
 
 class Block(Layer):
-    def __init__(self: Block, layers: list[Layer] = [], receive: tuple = (0,)) -> None:
+    def __init__(self: Block, layers: list[Layer] = [], receive: Receive = (0,)) -> None:
         super().__init__(receive)
         self.layers: list[Layer] = layers
 
@@ -15,7 +14,11 @@ class Block(Layer):
         for layer in self.layers:
             layer.set_lr(lr)
 
-    def _distribute(self: Block, quantity: tuple, function: Callable) -> tuple:
+    def _distribute(
+        self: Block,
+        quantity: tuple[Any, ...],
+        function: Callable[[Layer, tuple[Any, ...]], tuple[Any, ...]],
+    ) -> tuple[Any, ...]:
         volume = list(quantity)
         for layer in self.layers:
             entry = tuple([volume[idx] for idx in layer.receive])
@@ -26,17 +29,17 @@ class Block(Layer):
             volume[separator:separator] = output
         return tuple(volume)
 
-    def set_input_shape(self: Block, input_shape: tuple) -> tuple:
+    def set_input_shape(self: Block, input_shape: ShapeFlow) -> ShapeFlow:
         super().set_input_shape(input_shape)
         self.output_shape = self._distribute(input_shape, lambda layer, entry: layer.set_input_shape(entry))
         return self.output_shape
 
-    def __call__(self: Block, entry: tuple, memorize: bool) -> tuple:
+    def __call__(self: Block, entry: TensorFlow, memorize: bool) -> TensorFlow:
         super().__call__(entry, memorize)
         output = self._distribute(entry, lambda layer, entry: layer(entry, memorize))
         return output
 
-    def backprop(self: Block, gradient: tuple) -> tuple:
+    def backprop(self: Block, gradient: TensorFlow) -> TensorFlow:
         super().backprop(gradient)
         volume = list(gradient)
         for layer in reversed(self.layers):
@@ -44,15 +47,13 @@ class Block(Layer):
             input_slice = tuple(volume[beginning:end])
             del volume[beginning:end]
             output = layer.backprop(input_slice)
-            losses: list[tuple[int, NDArray[np.float64]]] = [
-                (el, output[idx]) for idx, el in enumerate(layer.receive)
-            ]
+            losses: list[tuple[int, Tensor]] = [(el, output[idx]) for idx, el in enumerate(layer.receive)]
             losses = sorted(losses, key=lambda x: x[0])
             for pos, loss in losses:
                 volume.insert(pos, loss)
         return tuple(volume)
 
-    def get_data(self: Block) -> dict:
+    def get_data(self: Block) -> SaveData:
         data = super().get_data()
         layers_data = []
         for layer in self.layers:
@@ -62,7 +63,7 @@ class Block(Layer):
         data["layers"] = layers_data
         return data
 
-    def load_from_data(self: Block, data: dict, layer_types: dict[str, type[Layer]] = {}) -> None:
+    def load_from_data(self: Block, data: SaveData, layer_types: dict[str, type[Layer]] = {}) -> None:
         super().load_from_data(data)
         self.layers = []
         for layer_data in data["layers"]:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from .tokenizer import Tokenizer
+from ..utils.typing import Tokens, SaveData
 import re
 import unicodedata
 
@@ -27,20 +28,20 @@ class WordTokenizer(Tokenizer):
                 self.V[word] = index
                 index += 1
 
-    def tokenize(self: WordTokenizer, text: str) -> list[int]:
+    def tokenize(self: WordTokenizer, text: str) -> Tokens:
         words = normalize(text).split(" ")
         return [self.V[word] for word in words]
 
-    def untokenize(self: WordTokenizer, tokens: list[int]) -> str:
+    def untokenize(self: WordTokenizer, tokens: Tokens) -> str:
         words: list[str] = []
         for token in tokens:
             word = next(k for k, v in self.V.items() if v == token)
             words.append(word)
         return " ".join(words)
 
-    def get_data(self: WordTokenizer) -> dict:
+    def get_data(self: WordTokenizer) -> SaveData:
         data = {"V": self.V}
         return data
 
-    def load_from_data(self: WordTokenizer, data: dict) -> None:
+    def load_from_data(self: WordTokenizer, data: SaveData) -> None:
         self.V = data["V"]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
-from numpy.typing import NDArray
 from .layer import Layer
+from ..utils.typing import ShapeFlow, Tensor, SaveData
 
 
 class Biais(Layer):
@@ -9,12 +9,12 @@ class Biais(Layer):
         super().__init__((receive,))
         self.B = np.array([[]])
 
-    def set_input_shape(self: Biais, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
+    def set_input_shape(self: Biais, input_shape: ShapeFlow) -> ShapeFlow:
         super().set_input_shape(input_shape)
         self.B = np.random.normal(0, np.sqrt(2 / input_shape[0][0]), size=(input_shape[0][0], 1))  # He
         return input_shape
 
-    def feed_forward(self: Biais, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: Biais, entry: Tensor) -> Tensor:
         if len(entry.shape) == 2:
             return entry + self.B
         elif len(entry.shape) == 3:
@@ -22,7 +22,7 @@ class Biais(Layer):
         else:
             raise ValueError
 
-    def descend_gradient(self: Biais, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def descend_gradient(self: Biais, gradient: Tensor) -> Tensor:
         if self.input is None:
             raise MemoryError
         if len(self.input[0].shape) == 2:
@@ -34,11 +34,11 @@ class Biais(Layer):
             raise ValueError
         return gradient
 
-    def get_data(self: Biais) -> dict:
+    def get_data(self: Biais) -> SaveData:
         data = super().get_data()
         data["B"] = self.B.flatten().tolist()
         return data
 
-    def load_from_data(self: Biais, data: dict) -> None:
+    def load_from_data(self: Biais, data: SaveData) -> None:
         super().load_from_data(data)
         self.B = np.array(data["B"]).reshape(self.input_shape[0][0], 1)

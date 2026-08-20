@@ -18,7 +18,7 @@ def llama():
         embedding.set_input_shape(((tokenizer.length(), -1),))
         if isinstance(tokenizer, WordTokenizer):
             embedding.set_lr(0.1)
-            smaller_text = scrap_text(15000, filename="scrapped-0")
+            smaller_text = scrap_text(10000, filename="scrapped-0")
             embedding.cbow_training(smaller_text, batch=1)
 
         # Build LLaMA
@@ -47,7 +47,7 @@ def llama():
                 gpt.save(gpt_name)
 
             visualization = ConsoleVisualization()
-            step = 200
+            step = 500
             idx = 1
             nbr_of_samples = math.ceil(len(data) / step)
             while len(data) >= step:

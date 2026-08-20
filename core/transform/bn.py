@@ -1,27 +1,27 @@
 from __future__ import annotations
 from ..layer.layer import Layer
 import numpy as np
-from numpy.typing import NDArray
+from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData
 
 
 class BN(Layer):
-    def __init__(self: BN, receive: tuple[int] = (0,)):
+    def __init__(self: BN, receive: Receive1 = (0,)):
         super().__init__(receive)
-        self.gamma: NDArray[np.float64] = np.array([[]])
-        self.beta: NDArray[np.float64] = np.array([[]])
+        self.gamma: Tensor = np.array([[]])
+        self.beta: Tensor = np.array([[]])
         self.epsilon = 1e-5
         self.mean = np.var([[]])
         self.var = np.var([[]])
         self.x_hat = np.var([[]])
 
-    def set_input_shape(self: BN, input_shape: tuple[tuple[int, int, int]]) -> tuple[tuple[int, int, int]]:
+    def set_input_shape(self: BN, input_shape: ShapeFlow) -> ShapeFlow:
         C, _, _ = input_shape[0]
         self.gamma = np.ones((C, 1))
         self.beta = np.zeros((C, 1))
         super().set_input_shape(input_shape)
         return self.output_shape
 
-    def feed_forward(self: BN, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: BN, entry: Tensor) -> Tensor:
         # moyenne par canal
         self.mean = np.mean(entry, axis=(1, 2), keepdims=True)
         # variance par canal
@@ -30,7 +30,7 @@ class BN(Layer):
         output = self.gamma[:, None, None] * self.x_hat + self.beta[:, None, None]
         return output
 
-    def descend_gradient(self: BN, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def descend_gradient(self: BN, gradient: Tensor) -> Tensor:
         if self.input is None or self.x_hat is None or self.gamma is None or self.beta is None:
             raise MemoryError
         _, H, W = gradient.shape
@@ -45,13 +45,13 @@ class BN(Layer):
         self.beta -= self.lr * np.sum(gradient, axis=(1, 2))
         return dx
 
-    def get_data(self: BN) -> dict:
+    def get_data(self: BN) -> SaveData:
         data = super().get_data()
         data["gamma"] = self.gamma.flatten().tolist()
         data["beta"] = self.beta.flatten().tolist()
         return data
 
-    def load_from_data(self: BN, data: dict) -> None:
+    def load_from_data(self: BN, data: SaveData) -> None:
         super().load_from_data(data)
         self.gamma = np.array(data["gamma"]).reshape(self.input_shape[0][0], 1)
         self.beta = np.array(data["beta"]).reshape(self.input_shape[0][0], 1)

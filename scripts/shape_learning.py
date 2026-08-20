@@ -1,7 +1,7 @@
 from core import MLP
 from graphics import regression
 import numpy as np
-from numpy.typing import NDArray
+from core.utils.typing import TrainData
 import math
 import random
 
@@ -12,7 +12,7 @@ def shape_learning() -> None:
         donut = math.sin(7.5 * circle)
         return donut
 
-    def get_data(dim: int) -> list[tuple[NDArray[np.float64], NDArray[np.float64]]]:
+    def get_data(dim: int) -> TrainData:
         data = []
         for _ in range(dim):
             x = random.uniform(0, 1)

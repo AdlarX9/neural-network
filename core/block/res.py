@@ -3,10 +3,11 @@ from ..layer.layer import Layer
 from .block import Block
 from ..transform.duplicate import Duplicate
 from ..transform.add import Add
+from ..utils.typing import Receive1
 
 
 class Res(Block):
-    def __init__(self: Res, layer: Layer = Layer(), receive: tuple[int] = (0,)) -> None:
+    def __init__(self: Res, layer: Layer = Layer(), receive: Receive1 = (0,)) -> None:
         self.layer = layer
         layers = [
             Duplicate(2),

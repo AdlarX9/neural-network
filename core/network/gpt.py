@@ -5,13 +5,14 @@ from core.layer.layer import Layer
 from .text_network import TextNetwork
 from ..layer.embedding import Embedding
 from ..tokenizer.word_tokenizer import WordTokenizer
+from ..utils.typing import Shape, Tokens
 
 
 class GPT(TextNetwork):
     def __init__(
         self: GPT,
         layers: list[Layer] = [],
-        input_shape: tuple = (0,),
+        input_shape: Shape = (0,),
         lr: float = 0.0001,
         exit_loss: ExitLoss = ExitLoss(),
         embedding: Embedding = Embedding(),
@@ -20,9 +21,9 @@ class GPT(TextNetwork):
 
     def build_data(
         self: GPT, text: str, context_length: int = 256, stride: int = 128
-    ) -> list[tuple[list[int], list[int]]]:
+    ) -> list[tuple[Tokens, Tokens]]:
         tokens = self.tokenize(text)
-        data: list[tuple[list[int], list[int]]] = []
+        data: list[tuple[Tokens, Tokens]] = []
         for i in range(0, len(tokens) - context_length, stride):
             data.append((tokens[i : i + context_length], tokens[i + 1 : i + context_length + 1]))
         random.shuffle(data)

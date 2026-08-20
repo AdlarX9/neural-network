@@ -1,10 +1,10 @@
 from __future__ import annotations
 import numpy as np
-from numpy.typing import NDArray
 from .layer import Layer
+from ..utils.typing import Shape, ShapeFlow, Tensor, Receive1, SaveData
 
 
-def im2col(x: NDArray[np.float64], K: int, S: int, P: int) -> NDArray[np.float64]:
+def im2col(x: Tensor, K: int, S: int, P: int) -> Tensor:
     C, H, W = x.shape
     # Padding spatial
     x_padded = np.pad(x, ((0, 0), (P, P), (P, P)), mode="constant", constant_values=0)
@@ -25,9 +25,7 @@ def im2col(x: NDArray[np.float64], K: int, S: int, P: int) -> NDArray[np.float64
     return cols
 
 
-def col2im(
-    cols: NDArray[np.float64], input_shape: tuple[int, int, int], K: int, S: int, P: int
-) -> NDArray[np.float64]:
+def col2im(cols: Tensor, input_shape: Shape, K: int, S: int, P: int) -> Tensor:
     C, H, W = input_shape
     H_padded = H + 2 * P
     W_padded = W + 2 * P
@@ -57,8 +55,8 @@ class Conv(Layer):
         self.K = K  # Watching field dimension
         self.S = S  # Stride
         self.N = N
-        self.Xcol: NDArray[np.float64] | None = None
-        self.kernels: NDArray[np.float64] = np.array([[[[]]]])
+        self.Xcol: Tensor | None = None
+        self.kernels: Tensor = np.array([[[[]]]])
         self.P = P
         if self.P == -1:
             if self.K % 2 == 1:
@@ -66,7 +64,7 @@ class Conv(Layer):
             else:
                 raise ValueError("K must not be even:", self.K)
 
-    def set_input_shape(self: Conv, input_shape: tuple[tuple[int, int, int]]) -> tuple[tuple[int, int, int]]:
+    def set_input_shape(self: Conv, input_shape: ShapeFlow) -> ShapeFlow:
         c, H, W = input_shape[0]
         super().set_input_shape(input_shape)
         self.kernels = np.random.normal(0, np.sqrt(2 / (c * self.K**2)), size=(self.N, c, self.K, self.K))
@@ -75,7 +73,7 @@ class Conv(Layer):
         self.output_shape = ((self.N, Hout, Wout),)
         return self.output_shape
 
-    def feed_forward(self: Conv, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: Conv, entry: Tensor) -> Tensor:
         Xcol = im2col(entry, self.K, self.S, self.P)
         self.Xcol = Xcol
         W = self.kernels.reshape(self.N, -1)
@@ -85,7 +83,7 @@ class Conv(Layer):
         Wout = (Winput + 2 * self.P - self.K) // self.S + 1
         return Y.reshape(self.N, Hout, Wout)
 
-    def descend_gradient(self: Conv, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def descend_gradient(self: Conv, gradient: Tensor) -> Tensor:
         if self.input is None or self.Xcol is None:
             raise MemoryError
         delta = gradient.reshape(self.N, -1)
@@ -95,7 +93,7 @@ class Conv(Layer):
         self.kernels -= self.lr * Wgrad
         return col2im(dXcol, self.input[0].shape, self.K, self.S, self.P)
 
-    def get_data(self: Conv) -> dict:
+    def get_data(self: Conv) -> SaveData:
         data = super().get_data()
         data["K"] = self.K
         data["S"] = self.S
@@ -104,7 +102,7 @@ class Conv(Layer):
         data["kernels"] = self.kernels.flatten().tolist()
         return data
 
-    def load_from_data(self: Conv, data: dict) -> None:
+    def load_from_data(self: Conv, data: SaveData) -> None:
         super().load_from_data(data)
         self.K = data["K"]
         self.S = data["S"]

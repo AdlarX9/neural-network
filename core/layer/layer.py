@@ -1,9 +1,8 @@
 from __future__ import annotations
-import numpy as np
-from numpy.typing import NDArray
+from ..utils.typing import Shape, ShapeFlow, Tensor, TensorFlow, Receive, SaveData
 
 
-def check_shape(shape1: tuple[int, ...], shape2: tuple[int, ...]) -> bool:
+def check_shape(shape1: Shape, shape2: Shape) -> bool:
     if len(shape1) != len(shape2):
         return False
     for i in range(len(shape1)):
@@ -12,7 +11,7 @@ def check_shape(shape1: tuple[int, ...], shape2: tuple[int, ...]) -> bool:
     return True
 
 
-def check_shapes(shape1: tuple[tuple[int, ...], ...], shape2: tuple[tuple[int, ...], ...]) -> bool:
+def check_shapes(shape1: ShapeFlow, shape2: ShapeFlow) -> bool:
     if len(shape1) != len(shape2):
         return False
     for i in range(len(shape1)):
@@ -22,35 +21,35 @@ def check_shapes(shape1: tuple[tuple[int, ...], ...], shape2: tuple[tuple[int, .
 
 
 class Layer:
-    def __init__(self: Layer, receive: tuple[int, ...] = (0,)) -> None:
+    def __init__(self: Layer, receive: Receive = (0,)) -> None:
         self.lr: float = 0.0
-        self.input_shape: tuple[tuple[int, ...], ...] = ((),)
-        self.output_shape: tuple = ((),)
-        self.input: tuple[NDArray[np.float64], ...] | None = None
-        if not hasattr(self, '_receive'):
+        self.input_shape: ShapeFlow = ((),)
+        self.output_shape: ShapeFlow = ((),)
+        self.input: TensorFlow | None = None
+        if not hasattr(self, "_receive"):
             self._receive: int = 1
         if self._receive != -1 and len(receive) != self._receive:
             raise ValueError(self._receive, receive)
-        self.receive: tuple[int, ...] = receive
+        self.receive: Receive = receive
 
     def set_lr(self: Layer, lr: float) -> None:
         self.lr = lr
 
-    def set_input_shape(self: Layer, input_shape: tuple) -> tuple:
+    def set_input_shape(self: Layer, input_shape: ShapeFlow) -> ShapeFlow:
         if self._receive != -1 and len(input_shape) != self._receive:
             raise ValueError(input_shape, self._receive, self.receive)
         self.input_shape = input_shape
         self.output_shape = self.input_shape
         return self.output_shape
 
-    def get_dimensions(self: Layer) -> tuple[tuple, tuple]:
+    def get_dimensions(self: Layer) -> tuple[ShapeFlow, ShapeFlow]:
         return self.input_shape, self.output_shape
 
     def feed_forward(self: Layer, entry):
         return entry
 
-    def __call__(self: Layer, entry: tuple, memorize: bool) -> tuple:
-        entry_shape: tuple[tuple[int, ...]] = tuple([el.shape for el in entry])  # type: ignore
+    def __call__(self: Layer, entry: TensorFlow, memorize: bool) -> TensorFlow:
+        entry_shape: ShapeFlow = tuple(el.shape for el in entry)
         if not check_shapes(entry_shape, self.input_shape):
             print(entry_shape, self.input_shape)
             raise ValueError
@@ -61,15 +60,17 @@ class Layer:
             output = self.feed_forward(entry[0])
         else:
             output = self.feed_forward(entry)
-        if type(output) == tuple:
+        if type(output) == TensorFlow:
             return output
-        else:
+        elif type(output) == Tensor:
             return (output,)
+        else:
+            raise ValueError
 
     def descend_gradient(self: Layer, gradient):
         return gradient
 
-    def backprop(self: Layer, gradient: tuple) -> tuple:
+    def backprop(self: Layer, gradient: TensorFlow) -> TensorFlow:
         if self.input_shape is None:
             raise MemoryError
         output = None
@@ -77,12 +78,14 @@ class Layer:
             output = self.descend_gradient(gradient[0])
         else:
             output = self.descend_gradient(gradient)
-        if type(output) == tuple:
+        if type(output) == TensorFlow:
             return output
-        else:
+        elif type(output) == Tensor:
             return (output,)
+        else:
+            raise ValueError
 
-    def get_data(self: Layer) -> dict:
+    def get_data(self: Layer) -> SaveData:
         data = {
             "lr": self.lr,
             "input_shape": self.input_shape,
@@ -92,7 +95,7 @@ class Layer:
         }
         return data
 
-    def load_from_data(self: Layer, data: dict) -> None:
+    def load_from_data(self: Layer, data: SaveData) -> None:
         self.lr = data["lr"]
         self.input_shape = data["input_shape"]
         self.output_shape = data["output_shape"]

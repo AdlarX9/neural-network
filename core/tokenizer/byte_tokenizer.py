@@ -3,6 +3,7 @@ from .tokenizer import Tokenizer
 from collections import Counter
 import heapq
 import re
+from ..utils.typing import Tokens, SaveData
 
 
 class ByteTokenizer(Tokenizer):
@@ -218,10 +219,7 @@ class ByteTokenizer(Tokenizer):
         if set(self.V.values()) != set(range(self.vocab_size)):
             raise RuntimeError("BPE vocabulary contains " "non-contiguous token IDs.")
 
-    def tokenize(
-        self: ByteTokenizer,
-        text: str,
-    ) -> list[int]:
+    def tokenize(self: ByteTokenizer, text: str) -> Tokens:
         show = bool(len(text) > 100_000)
         if not text:
             return []
@@ -319,7 +317,7 @@ class ByteTokenizer(Tokenizer):
 
     def untokenize(
         self: ByteTokenizer,
-        tokens: list[int],
+        tokens: Tokens,
     ) -> str:
         byte_values = bytearray()
         for token_id in tokens:
@@ -328,7 +326,7 @@ class ByteTokenizer(Tokenizer):
             byte_values.extend(self._token_bytes[token_id])
         return bytes(byte_values).decode("utf-8")
 
-    def get_data(self: ByteTokenizer) -> dict:
+    def get_data(self: ByteTokenizer) -> SaveData:
         data = {
             "vocab_size": self.vocab_size,
             "V": [[list(token), idx] for token, idx in self.V.items()],
@@ -336,7 +334,7 @@ class ByteTokenizer(Tokenizer):
         }
         return data
 
-    def load_from_data(self: ByteTokenizer, data: dict) -> None:
+    def load_from_data(self: ByteTokenizer, data: SaveData) -> None:
         self.vocab_size = data["vocab_size"]
         self.V = {tuple(token): idx for token, idx in data["V"]}
         self.R = [(tuple(left), tuple(right)) for left, right in data["R"]]

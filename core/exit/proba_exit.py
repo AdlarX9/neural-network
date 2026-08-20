@@ -1,37 +1,34 @@
 from __future__ import annotations
-from core.layer.layer import Layer
 import numpy as np
-from numpy.typing import NDArray
 from .exit_loss import ExitLoss
 from ..utils.functions import softmax
+from ..utils.typing import Tensor, Receive1, SaveData
 
 
 class ProbaExit(ExitLoss):
-    def __init__(self: ProbaExit, axis: int | None = None, receive: int = 0):
+    def __init__(self: ProbaExit, axis: int | None = None, receive: Receive1 = (0,)):
         self.axis = axis
         super().__init__(receive)
 
-    def feed_forward(self: ProbaExit, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: ProbaExit, entry: Tensor) -> Tensor:
         return softmax(entry, axis=self.axis)
 
-    def get_loss(self: ProbaExit, prediction: NDArray[np.float64], answer: NDArray[np.float64]) -> float:
+    def get_loss(self: ProbaExit, prediction: Tensor, answer: Tensor) -> float:
         epsilon = 1e-10
         _, p = prediction.shape
         prediction = np.clip(prediction, epsilon, 1 - epsilon)
         loss = -np.sum(answer * np.log(prediction)) / p  # cross-entropy
         return loss
 
-    def get_gradient(
-        self: ProbaExit, prediction: NDArray[np.float64], answer: NDArray[np.float64]
-    ) -> NDArray[np.float64]:
+    def get_gradient(self: ProbaExit, prediction: Tensor, answer: Tensor) -> Tensor:
         _, p = prediction.shape
         return (prediction - answer) / p  # cross-entropy + softmax
 
-    def get_data(self: ProbaExit) -> dict:
+    def get_data(self: ProbaExit) -> SaveData:
         data = super().get_data()
         data["axis"] = self.axis
         return data
 
-    def load_from_data(self: ProbaExit, data: dict) -> None:
+    def load_from_data(self: ProbaExit, data: SaveData) -> None:
         super().load_from_data(data)
         self.axis = data["axis"]

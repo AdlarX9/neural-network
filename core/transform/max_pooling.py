@@ -2,16 +2,17 @@ from __future__ import annotations
 import math
 import numpy as np
 from numpy.typing import NDArray
+from ..utils.typing import Tensor, Receive1, SaveData
 from ..layer.layer import Layer
 
 
 class MaxPooling(Layer):
-    def __init__(self: MaxPooling, dim: int = 1, receive: tuple[int] = (0,)) -> None:
+    def __init__(self: MaxPooling, dim: int = 1, receive: Receive1 = (0,)) -> None:
         super().__init__(receive)
         self.dim = dim
         self._max_pos: NDArray[np.int64] | None = None  # positions des max dans chaque fenêtre
 
-    def feed_forward(self: MaxPooling, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: MaxPooling, entry: Tensor) -> Tensor:
         c, n, p = entry.shape
         d = self.dim
 
@@ -37,7 +38,7 @@ class MaxPooling(Layer):
         out = np.max(flat, axis=-1)  # (c, out_h, out_w)
         return out
 
-    def descend_gradient(self: MaxPooling, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def descend_gradient(self: MaxPooling, gradient: Tensor) -> Tensor:
         if self.input is None or self._max_pos is None:
             raise MemoryError("feed_forward must be called before descend_gradient")
 
@@ -68,11 +69,11 @@ class MaxPooling(Layer):
 
         return grad_padded
 
-    def get_data(self: MaxPooling) -> dict:
+    def get_data(self: MaxPooling) -> SaveData:
         data = super().get_data()
         data["dim"] = self.dim
         return data
 
-    def load_from_data(self: MaxPooling, data: dict) -> None:
+    def load_from_data(self: MaxPooling, data: SaveData) -> None:
         super().load_from_data(data)
         self.dim = data["dim"]

@@ -1,14 +1,14 @@
 from __future__ import annotations
 from ..layer.layer import Layer
 import numpy as np
-from numpy.typing import NDArray
+from ..utils.typing import ShapeFlow, Tensor, Receive1
 
 
 class Causal(Layer):
-    def __init__(self: Causal, receive: tuple[int] = (0,)) -> None:
+    def __init__(self: Causal, receive: Receive1 = (0,)) -> None:
         super().__init__(receive)
 
-    def set_input_shape(self: Causal, input_shape: tuple) -> tuple:
+    def set_input_shape(self: Causal, input_shape: ShapeFlow) -> ShapeFlow:
         super().set_input_shape(input_shape)
         if (
             len(input_shape[0]) == 2
@@ -19,6 +19,6 @@ class Causal(Layer):
             raise ValueError("Causal only accepts square matrices:", input_shape)
         return self.output_shape
 
-    def feed_forward(self: Causal, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: Causal, entry: Tensor) -> Tensor:
         mask = np.tril(np.full(entry.shape, -np.inf), k=-1)
         return entry + mask

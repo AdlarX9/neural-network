@@ -147,7 +147,7 @@ class NumbersViewer:
         self._pending_update = False
         try:
             inp = self.data.reshape((1, self.grid_h, self.grid_w)).astype(np.float64)
-            probs = self.network.compute(inp)
+            probs = self.network(inp)  # type: ignore
             probs = np.array(probs).reshape(-1)
             # ensure length 10
             if probs.size >= 10:

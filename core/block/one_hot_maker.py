@@ -1,17 +1,15 @@
 from __future__ import annotations
-from typing import Any
-from core.layer.layer import Layer
 import numpy as np
-from numpy.typing import NDArray
 from .block import Block
 from ..layer.fc import FC
 from ..layer.biais import Biais
 from ..layer.embedding import Embedding
 from ..layer.layer import check_shapes
+from ..utils.typing import ShapeFlow, Receive1
 
 
 class OneHotMaker(Block):
-    def __init__(self: OneHotMaker, embedding: Embedding | None = None, receive: tuple[int] = (0,)) -> None:
+    def __init__(self: OneHotMaker, embedding: Embedding | None = None, receive: Receive1 = (0,)) -> None:
         if embedding is None:
             super().__init__(receive=receive)
             return
@@ -37,7 +35,7 @@ class OneHotMaker(Block):
         else:
             raise ValueError
 
-    def set_input_shape(self: OneHotMaker, input_shape: tuple) -> tuple:
+    def set_input_shape(self: OneHotMaker, input_shape: ShapeFlow) -> ShapeFlow:
         if not check_shapes(input_shape, self.input_shape):
             raise ValueError("mismatch in input shapes:", input_shape, self.input_shape)
         return self.output_shape

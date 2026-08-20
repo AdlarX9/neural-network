@@ -1,18 +1,18 @@
 from __future__ import annotations
 import numpy as np
-from numpy.typing import NDArray
+from ..utils.typing import Tensor, Receive1, SaveData
 from ..layer.layer import Layer
 
 
 class UpSample(Layer):
-    def __init__(self: UpSample, factor: int = 2, receive: tuple[int] = (0,)) -> None:
+    def __init__(self: UpSample, factor: int = 2, receive: Receive1 = (0,)) -> None:
         super().__init__(receive)
         self.factor = factor
 
-    def feed_forward(self: UpSample, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: UpSample, entry: Tensor) -> Tensor:
         return np.repeat(np.repeat(entry, self.factor, axis=1), self.factor, axis=2)
 
-    def descend_gradient(self: UpSample, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def descend_gradient(self: UpSample, gradient: Tensor) -> Tensor:
         C, Hout, Wout = gradient.shape
         H = Hout // self.factor
         W = Wout // self.factor
@@ -23,6 +23,6 @@ class UpSample(Layer):
         data["factor"] = self.factor
         return data
 
-    def load_from_data(self: UpSample, data: dict) -> None:
+    def load_from_data(self: UpSample, data: SaveData) -> None:
         super().load_from_data(data)
         self.factor = data["factor"]

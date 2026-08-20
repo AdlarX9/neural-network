@@ -1,11 +1,11 @@
 from __future__ import annotations
 from ..layer.layer import Layer
 import numpy as np
-from numpy.typing import NDArray
+from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Receive, SaveData
 
 
 class Concat(Layer):
-    def __init__(self: Concat, axis: int = 0, receive: tuple[int, ...] = (0,)) -> None:
+    def __init__(self: Concat, axis: int = 0, receive: Receive = (0,)) -> None:
         self._receive = -1
         self.axis = axis
         super().__init__(receive)
@@ -18,7 +18,7 @@ class Concat(Layer):
             raise ValueError("Concat axis out of range:", self.axis, ndim)
         return axis
 
-    def set_input_shape(self: Concat, input_shape: tuple[tuple, ...]) -> tuple[tuple]:
+    def set_input_shape(self: Concat, input_shape: ShapeFlow) -> ShapeFlow:
         super().set_input_shape(input_shape)
         if len(input_shape) == 0:
             raise ValueError("Concat requires at least one input")
@@ -33,20 +33,22 @@ class Concat(Layer):
                     continue
                 if dim != ref_dim:
                     raise ValueError("Concat inconsistent dimensions:", shape, reference_shape)
-        self.output_shape = tuple(
-            sum(shape[axis] for shape in input_shape) if idx == axis else reference_shape[idx]
-            for idx in range(rank)
+        self.output_shape = (
+            tuple(
+                sum(shape[axis] for shape in input_shape) if idx == axis else reference_shape[idx]
+                for idx in range(rank)
+            ),
         )
         return self.output_shape
 
-    def feed_forward(self: Concat, entry: tuple[NDArray[np.float64], ...]) -> NDArray[np.float64]:
+    def feed_forward(self: Concat, entry: TensorFlow) -> Tensor:
         return np.concatenate(entry, axis=self._normalize_axis(len(entry[0].shape)))
 
-    def descend_gradient(self: Concat, gradient: NDArray[np.float64]) -> tuple[NDArray[np.float64], ...]:
+    def descend_gradient(self: Concat, gradient: Tensor) -> TensorFlow:
         if self.input is None:
             raise MemoryError
         axis = self._normalize_axis(len(self.input[0].shape))
-        gradients: list[NDArray[np.float64]] = []
+        gradients: list[Tensor] = []
         start = 0
         for tensor in self.input:
             length = tensor.shape[axis]
@@ -61,6 +63,6 @@ class Concat(Layer):
         data["axis"] = self.axis
         return data
 
-    def load_from_data(self: Concat, data: dict) -> None:
+    def load_from_data(self: Concat, data: SaveData) -> None:
         super().load_from_data(data)
         self.axis = data["axis"]

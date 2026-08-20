@@ -3,12 +3,13 @@ from .layer import Layer
 import numpy as np
 from numpy.typing import NDArray
 from ..utils.functions import sigmoid
+from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData
 
 
 class LSTM(Layer):
-    def __init__(self: LSTM, receive: int = 0) -> None:
-        super().__init__((receive,))
-        self.data: list[dict[str, NDArray[np.float64]]] = []
+    def __init__(self: LSTM, receive: Receive1 = (0,)) -> None:
+        super().__init__(receive)
+        self.data: list[dict[str, Tensor]] = []
         self.n = 0
         self.h = np.array([[]])
         self.c = np.array([[]])
@@ -31,8 +32,8 @@ class LSTM(Layer):
         self.bo = np.array([[]])
         self.bc = np.array([[]])
 
-        self.gradient_h: NDArray[np.float64] | None = None
-        self.gradient_c: NDArray[np.float64] | None = None
+        self.gradient_h: Tensor | None = None
+        self.gradient_c: Tensor | None = None
 
     def reset_data(self: LSTM) -> None:
         self.h = np.zeros_like(self.h)
@@ -51,7 +52,7 @@ class LSTM(Layer):
         self.gradient_h = None
         self.gradient_c = None
 
-    def set_input_shape(self: LSTM, input_shape: tuple[tuple[int, int]]) -> tuple[tuple[int, int]]:
+    def set_input_shape(self: LSTM, input_shape: ShapeFlow) -> ShapeFlow:
         n, p = input_shape[0]
         self.n = n
         if p != 1:
@@ -81,7 +82,7 @@ class LSTM(Layer):
         self.reset_data()
         return self.output_shape
 
-    def feed_forward(self: LSTM, entry: NDArray[np.float64]) -> NDArray[np.float64]:
+    def feed_forward(self: LSTM, entry: Tensor) -> Tensor:
         forget = sigmoid(self.Wf @ entry + self.Uf @ self.h + self.bf)
         input = sigmoid(self.Wi @ entry + self.Ui @ self.h + self.bi)
         output = sigmoid(self.Wo @ entry + self.Uo @ self.h + self.bo)
@@ -103,7 +104,7 @@ class LSTM(Layer):
 
         return self.h
 
-    def descend_gradient(self: LSTM, gradient: NDArray[np.float64]) -> NDArray[np.float64]:
+    def descend_gradient(self: LSTM, gradient: Tensor) -> Tensor:
         if len(self.data) < 2:
             raise MemoryError
         if self.gradient_h is None:
@@ -167,7 +168,7 @@ class LSTM(Layer):
 
         return new_gradient
 
-    def get_data(self: LSTM) -> dict:
+    def get_data(self: LSTM) -> SaveData:
         data = super().get_data()
         data["n"] = self.n
 
@@ -188,7 +189,7 @@ class LSTM(Layer):
 
         return data
 
-    def load_from_data(self: LSTM, data: dict) -> None:
+    def load_from_data(self: LSTM, data: SaveData) -> None:
         super().load_from_data(data)
         self.n = data["n"]
         self.h = np.zeros(self.input_shape[0])
