@@ -15,6 +15,8 @@ class Block(Layer):
             layer.set_lr(lr)
 
     def set_id(self: Block, id: int = 0) -> int:
+        if self._id != -1:
+            return 0
         id = super().set_id(id)
         for layer in self.layers:
             id = layer.set_id(id)

@@ -75,10 +75,16 @@ class TextNetwork(Network):
         if not isinstance(embedding, Embedding):
             raise MemoryError
         self.embedding = embedding
-    
+
     def get_params_data(self: TextNetwork) -> list[dict[str, Any]]:
         return self.embedding.get_params_data() + super().get_params_data()
-    
+
+    def set_id(self: TextNetwork, id: int = 0) -> int:
+        if self._id != -1:
+            return 0
+        id = self.embedding.set_id(id)
+        return super().set_id(id)
+
     def get_layer_by_id(self: TextNetwork, id: int) -> Layer | None:
         if self.embedding._id == id:
             return self.embedding

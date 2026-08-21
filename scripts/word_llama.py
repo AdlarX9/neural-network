@@ -33,8 +33,8 @@ def word_llama():
     data = Data()
     data.build_tokens_data(gpt, tokens_data)
     batch = 4_000
-    trainer = Trainer(data)
-    trainer.train((gpt,), loss=LogLoss(), batch=batch)
+    trainer = Trainer((gpt,), data, loss=LogLoss())
+    trainer.train(batch=batch)
     gpt.save(gpt_name)
 
     predictions = gpt.compute_text(gpt.untokenize(gpt.tokenize(sample)[:-1]))

@@ -112,6 +112,8 @@ class Layer:
         self.lr = lr
 
     def set_id(self: Layer, id: int = 0) -> int:
+        if self._id != -1:
+            return 0
         self._id = id
         return id + 1
 

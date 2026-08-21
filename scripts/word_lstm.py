@@ -33,10 +33,10 @@ def word_lstm() -> None:
 
     data = Data()
     data.build_tokens_data(lstm, build_data(lstm, context))
-    trainer = Trainer(data)
+    trainer = Trainer((lstm,), data, LogLoss())
 
     batch = 2_000
-    trainer.train((lstm,), LogLoss(), batch)
+    trainer.train(batch=batch)
 
     lstm.save(lstm_name)
 

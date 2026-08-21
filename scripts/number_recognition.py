@@ -13,8 +13,8 @@ def number_recognition() -> None:
     cnn.load(name)
 
     data = load_mnist_data()[:30_000]
-    trainer = Trainer(Data(data))
-    trainer.train((cnn,), loss=LogLoss(), batch=1)
+    trainer = Trainer((cnn,), Data(data), loss=LogLoss())
+    trainer.train(batch=1)
     cnn.save(name)
 
     view_numbers(cnn)

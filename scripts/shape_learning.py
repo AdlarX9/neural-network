@@ -30,7 +30,7 @@ def shape_learning() -> None:
             mlp = MLP(neuron_numbers.copy(), lr)
 
     batch = 400
-    trainer = Trainer(get_data(batch))
-    trainer.train((mlp,), batch=batch)
+    trainer = Trainer((mlp,), get_data(batch))
+    trainer.train(batch=batch)
     mlp.save(name)
     regression(mlp, curve)

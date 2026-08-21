@@ -116,6 +116,7 @@ class SaveHandler:
         return layer
 
     def save(self: SaveHandler, layer: core.Layer, name: str) -> None:
+        layer.set_id()
         base = self.get_path(name)
         os.makedirs(base, exist_ok=True)
         path = os.path.join(base, "info.json")

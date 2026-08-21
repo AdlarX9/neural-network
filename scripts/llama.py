@@ -7,7 +7,6 @@ import math
 
 def llama():
     gpt_name = "llama"
-    lr = 0.0008
     if not SaveHandler().has(gpt_name):
         # Build Embedding
         tokenizer = ByteTokenizer(8192)
@@ -26,17 +25,24 @@ def llama():
         gpt = LLaMA(
             head_numbers=head_numbers,
             embedding=embedding,
-            lr=lr,
         )
     else:
         gpt = LLaMA()
         gpt.load(gpt_name)
-        gpt.set_lr(lr)
 
     scrap_number: int = 0
     displayed: bool = False
     data = Data()
-    trainer = Trainer(data=data)
+
+    trainer = Trainer((gpt,), data=data, loss=LogLoss())
+    trainer.adamw = True
+    trainer.gradient_clipping = True
+    trainer.weight_decay = 0.1
+    trainer.max_lr = (3e-4,)
+    trainer.final_lr = (3e-5,)
+    trainer.warmup_steps = 1000
+    trainer.cosine_decay = (15000, 25000)
+
     try:
         while True:
             # Build data
@@ -63,11 +69,11 @@ def llama():
                 idx += 1
                 data.build_tokens_data(gpt, samples[:step])
                 del samples[:step]
-                trainer.train((gpt,), LogLoss(), batch=1, title=title)
+                trainer.train(batch=1, title=title)
                 save()
             title = "LLaMA Training Sample n°" + str(idx) + "/" + str(nbr_of_samples)
             data.build_tokens_data(gpt, samples)
-            trainer.train((gpt,), LogLoss(), batch=1, title=title)
+            trainer.train(batch=1, title=title)
             save()
             if isinstance(gpt.embedding.tokenizer, ByteTokenizer):
                 scrap_number += 1
