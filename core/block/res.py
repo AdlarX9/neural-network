@@ -1,8 +1,8 @@
 from __future__ import annotations
-from ..layer.layer import Layer
-from .block import Block
-from ..transform.duplicate import Duplicate
-from ..transform.add import Add
+from ..basics.layer import Layer
+from ..basics.block import Block
+from ..flowmakers.duplicate import Duplicate
+from ..flowmakers.add import Add
 from ..utils.typing import Receive1
 
 

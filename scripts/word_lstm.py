@@ -1,13 +1,13 @@
-from core import TextNetwork, LSTMNetwork, ProbaExit, Embedding, WordTokenizer
+from core import TextNetwork, LSTMNetwork, Embedding, WordTokenizer, Softmax, Data, Trainer, Tokens, LogLoss
 
 sample: str = str(
     "roi duc duchesse prince princesse bisous amour mariage lit dormir repos travail etat salaire argent"
 )
 
 
-def build_data(lstm: TextNetwork, context: int = 1) -> list[tuple[list[int], list[int]]]:
+def build_data(lstm: TextNetwork, context: int = 1) -> list[tuple[Tokens, Tokens]]:
     tokens = lstm.tokenize(sample)
-    data: list[tuple[list[int], list[int]]] = []
+    data: list[tuple[Tokens, Tokens]] = []
     for i in range(len(tokens) - context):
         entry = tokens[i : i + context]
         answer = [tokens[i + context]]
@@ -28,10 +28,16 @@ def word_lstm() -> None:
     # Build LSTM
     context = 3
     lstm_name = "word_lstm"
-    lstm = LSTMNetwork(embedding=embedding, exit_loss=ProbaExit(), lr=0.05)
+    lstm = LSTMNetwork(embedding=embedding, lr=0.05, more_layers=[Softmax()])
     lstm.load(lstm_name)
-    data = build_data(lstm, context)
-    lstm.train_tokens(data=data, batch=2_000)
+
+    data = Data()
+    data.build_tokens_data(lstm, build_data(lstm, context))
+    trainer = Trainer(data)
+
+    batch = 2_000
+    trainer.train((lstm,), LogLoss(), batch)
+
     lstm.save(lstm_name)
 
     # Predict words

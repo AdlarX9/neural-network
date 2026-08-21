@@ -1,8 +1,8 @@
-from core import LLaMA, TextNetwork, Embedding, WordTokenizer
+from core import LLaMA, TextNetwork, Embedding, WordTokenizer, Data, Trainer, LogLoss, Tokens
 from .word_lstm import sample
 
 
-def build_data(gpt: TextNetwork) -> list[tuple[list[int], list[int]]]:
+def build_data(gpt: TextNetwork) -> list[tuple[Tokens, Tokens]]:
     tokens = gpt.tokenize(sample)
     data = [(tokens[:-1], tokens[1:])]
     return data
@@ -29,9 +29,12 @@ def word_llama():
     gpt.load(gpt_name)
     gpt.set_lr(lr)
 
-    data = build_data(gpt)
+    tokens_data = build_data(gpt)
+    data = Data()
+    data.build_tokens_data(gpt, tokens_data)
     batch = 4_000
-    gpt.train_tokens(data, batch)
+    trainer = Trainer(data)
+    trainer.train((gpt,), loss=LogLoss(), batch=batch)
     gpt.save(gpt_name)
 
     predictions = gpt.compute_text(gpt.untokenize(gpt.tokenize(sample)[:-1]))

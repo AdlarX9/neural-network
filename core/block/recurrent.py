@@ -1,9 +1,9 @@
 from __future__ import annotations
-from ..layer.layer import Layer
-from .block import Block
-from ..layer.lstm import LSTM
+from ..basics.layer import Layer
+from ..basics.block import Block
+from ..parameterized.lstm import LSTM
 import numpy as np
-from ..utils.typing import ShapeFlow, TensorFlow, Receive1
+from ..utils.typing import ShapeFlow, TensorFlow, Receive1, ParamGrad
 
 
 class Recurrent(Block):
@@ -32,17 +32,22 @@ class Recurrent(Block):
             self.input = entry
         return out
 
-    def backprop(self: Recurrent, gradient: TensorFlow) -> TensorFlow:
+    def backprop(self: Recurrent, gradient: TensorFlow) -> tuple[TensorFlow, ParamGrad]:
         if self.input is None:
             raise MemoryError
         _, p = self.input[0].shape
         new_gradient: TensorFlow | None = None
+        params: ParamGrad | None = None
         for _ in reversed(range(p)):
-            gradient = super().backprop(gradient)
+            gradient, param = super().backprop(gradient)
+            if params is None:
+                params = param
+            else:
+                params = {key: params[key] + param[key] for key in params}
             if new_gradient is None:
                 new_gradient = gradient
             else:
                 new_gradient = (np.hstack((gradient[0], new_gradient[0])),)
-        if new_gradient is None:
+        if new_gradient is None or params is None:
             raise ValueError
-        return new_gradient
+        return new_gradient, params

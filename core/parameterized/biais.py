@@ -1,13 +1,14 @@
 from __future__ import annotations
 import numpy as np
-from .layer import Layer
-from ..utils.typing import ShapeFlow, Tensor, SaveData
+from ..basics.layer import Layer
+from ..utils.typing import ShapeFlow, Tensor, SaveData, ParamGrad
 
 
 class Biais(Layer):
     def __init__(self: Biais, receive: int = 0) -> None:
         super().__init__((receive,))
         self.B = np.array([[]])
+        self.parameters = ["B"]
 
     def set_input_shape(self: Biais, input_shape: ShapeFlow) -> ShapeFlow:
         super().set_input_shape(input_shape)
@@ -23,22 +24,17 @@ class Biais(Layer):
             raise ValueError
 
     def descend_gradient(self: Biais, gradient: Tensor) -> Tensor:
+        return gradient
+
+    def params_gradient(self: Biais, gradient) -> ParamGrad:
         if self.input is None:
             raise MemoryError
         if len(self.input[0].shape) == 2:
-            self.B -= self.lr * np.sum(gradient, axis=1, keepdims=True)
+            return {"B": np.sum(gradient, axis=1, keepdims=True)}
         elif len(self.input[0].shape) == 3:
+            B_gradient = np.zeros_like(self.B)
             for i in range(self.B.shape[0]):
-                self.B[i, 0] -= self.lr * np.sum(gradient[i, :, :])
+                B_gradient[i, 0] += np.sum(gradient[i, :, :])
+            return {"B": B_gradient}
         else:
             raise ValueError
-        return gradient
-
-    def get_data(self: Biais) -> SaveData:
-        data = super().get_data()
-        data["B"] = self.B.flatten().tolist()
-        return data
-
-    def load_from_data(self: Biais, data: SaveData) -> None:
-        super().load_from_data(data)
-        self.B = np.array(data["B"]).reshape(self.input_shape[0][0], 1)

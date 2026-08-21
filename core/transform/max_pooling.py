@@ -3,7 +3,7 @@ import math
 import numpy as np
 from numpy.typing import NDArray
 from ..utils.typing import Tensor, Receive1, SaveData
-from ..layer.layer import Layer
+from ..basics.layer import Layer
 
 
 class MaxPooling(Layer):

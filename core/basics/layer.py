@@ -1,5 +1,6 @@
 from __future__ import annotations
-from ..utils.typing import Shape, ShapeFlow, Tensor, TensorFlow, Receive, SaveData
+from ..utils.typing import Shape, ShapeFlow, Tensor, TensorFlow, Receive, SaveData, ParamGrad
+from typing import Any
 
 
 def check_shape(shape1: Shape, shape2: Shape) -> bool:
@@ -31,9 +32,8 @@ class Layer:
         if self._receive != -1 and len(receive) != self._receive:
             raise ValueError(self._receive, receive)
         self.receive: Receive = receive
-
-    def set_lr(self: Layer, lr: float) -> None:
-        self.lr = lr
+        self._id: int = -1
+        self.parameters: list[str] = []
 
     def set_input_shape(self: Layer, input_shape: ShapeFlow) -> ShapeFlow:
         if self._receive != -1 and len(input_shape) != self._receive:
@@ -42,13 +42,10 @@ class Layer:
         self.output_shape = self.input_shape
         return self.output_shape
 
-    def get_dimensions(self: Layer) -> tuple[ShapeFlow, ShapeFlow]:
-        return self.input_shape, self.output_shape
-
     def feed_forward(self: Layer, entry):
         return entry
 
-    def __call__(self: Layer, entry: TensorFlow, memorize: bool) -> TensorFlow:
+    def __call__(self: Layer, entry: TensorFlow, memorize: bool = False) -> TensorFlow:
         entry_shape: ShapeFlow = tuple(el.shape for el in entry)
         if not check_shapes(entry_shape, self.input_shape):
             print(entry_shape, self.input_shape)
@@ -60,30 +57,35 @@ class Layer:
             output = self.feed_forward(entry[0])
         else:
             output = self.feed_forward(entry)
-        if type(output) == TensorFlow:
+        if isinstance(output, tuple):
             return output
-        elif type(output) == Tensor:
-            return (output,)
         else:
-            raise ValueError
+            return (output,)
 
     def descend_gradient(self: Layer, gradient):
         return gradient
 
-    def backprop(self: Layer, gradient: TensorFlow) -> TensorFlow:
+    def params_gradient(self: Layer, gradient) -> ParamGrad:
+        return {}
+
+    def backprop(self: Layer, gradient: TensorFlow) -> tuple[TensorFlow, ParamGrad]:
         if self.input_shape is None:
             raise MemoryError
-        output = None
+        output: TensorFlow | Tensor = ()
+        params_input = gradient
         if len(self.output_shape) == 1:
+            params_input = gradient[0]
             output = self.descend_gradient(gradient[0])
         else:
             output = self.descend_gradient(gradient)
-        if type(output) == TensorFlow:
-            return output
-        elif type(output) == Tensor:
-            return (output,)
+        if isinstance(output, tuple):
+            new_gradient: TensorFlow = output
         else:
-            raise ValueError
+            new_gradient: TensorFlow = (output,)
+        gradients = self.params_gradient(params_input)
+        prefix = str(self._id) + "."
+        gradients = {prefix + key: value for key, value in gradients.items()}
+        return new_gradient, gradients
 
     def get_data(self: Layer) -> SaveData:
         data = {
@@ -92,6 +94,8 @@ class Layer:
             "output_shape": self.output_shape,
             "receive": self.receive,
             "_receive": self._receive,
+            "_id": self._id,
+            "parameters": self.parameters,
         }
         return data
 
@@ -101,6 +105,34 @@ class Layer:
         self.output_shape = data["output_shape"]
         self.receive = data["receive"]
         self._receive = data["_receive"]
+        self._id = data["_id"]
+        self.parameters = data["parameters"]
+
+    def set_lr(self: Layer, lr: float) -> None:
+        self.lr = lr
+
+    def set_id(self: Layer, id: int = 0) -> int:
+        self._id = id
+        return id + 1
+
+    def get_dimensions(self: Layer) -> tuple[ShapeFlow, ShapeFlow]:
+        return self.input_shape, self.output_shape
+
+    def get_params_data(self: Layer) -> list[dict[str, Any]]:
+        data = [
+            {
+                "id": self._id,
+                "parameters": self.parameters,
+            }
+        ]
+        for param_name in self.parameters:
+            data[0][param_name] = getattr(self, param_name)
+        return data
+
+    def get_layer_by_id(self: Layer, id: int) -> Layer | None:
+        if self._id == id:
+            return self
+        return None
 
     def save(self: Layer, name: str) -> None:
         from data import SaveHandler

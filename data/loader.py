@@ -5,6 +5,7 @@ import struct
 import urllib.request
 from pathlib import Path
 import os
+from core import TrainData
 
 
 def _load_image_as_input(image_path: Path, image_size: tuple[int, int]) -> NDArray[np.float64]:
@@ -99,7 +100,7 @@ def _load_mnist_labels(file_path: Path) -> NDArray[np.int64]:
 
 def load_mnist_data(
     cache_dir: str | Path = Path(os.path.join("data", "numbers")), split: str = "train"
-) -> list[tuple[NDArray[np.float64], NDArray[np.float64]]]:
+) -> TrainData:
     cache_path = Path(cache_dir)
 
     if split not in {"train", "test"}:
@@ -117,8 +118,8 @@ def load_mnist_data(
     images = _load_mnist_images(images_path)
     labels = _load_mnist_labels(labels_path)
 
-    data: list[tuple[NDArray[np.float64], NDArray[np.float64]]] = []
+    data: TrainData = []
     for image, label in zip(images, labels, strict=True):
-        data.append((image.reshape(1, image.shape[0], image.shape[1]), _one_hot(int(label))))
+        data.append(((image.reshape(1, image.shape[0], image.shape[1]),), (_one_hot(int(label)),)))
 
     return data

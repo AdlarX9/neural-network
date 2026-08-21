@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from ..utils.typing import ShapeFlow, Tensor, Receive1
-from ..layer.layer import Layer
+from ..basics.layer import Layer
 
 
 class GlobalAveragePooling(Layer):

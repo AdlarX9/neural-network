@@ -1,4 +1,4 @@
-from core import LLaMA, Embedding, ByteTokenizer, WordTokenizer
+from core import LLaMA, Embedding, ByteTokenizer, WordTokenizer, Data, Trainer, LogLoss
 from graphics import ConsoleVisualization
 from data import scrap_text, SaveHandler
 from graphics import chat
@@ -35,23 +35,24 @@ def llama():
 
     scrap_number: int = 0
     displayed: bool = False
+    data = Data()
+    trainer = Trainer(data=data)
     try:
         while True:
             # Build data
             text = scrap_text(1_000_000, filename="scrapped-" + str(scrap_number))
-            data = gpt.build_data(text)
+            samples = data.get_samples(gpt, text)
             del text
 
             # Train & Save
             def save():
                 gpt.save(gpt_name)
 
-            visualization = ConsoleVisualization()
             step = 500
             idx = 1
-            nbr_of_samples = math.ceil(len(data) / step)
-            while len(data) >= step:
-                visualization.title = (
+            nbr_of_samples = math.ceil(len(samples) / step)
+            while len(samples) >= step:
+                title = (
                     "LLaMA Training Sample ("
                     + str(scrap_number)
                     + ") n°"
@@ -60,19 +61,13 @@ def llama():
                     + str(nbr_of_samples)
                 )
                 idx += 1
-                gpt.train_tokens(
-                    data=data[:step],
-                    batch=1,
-                    visualization=visualization,
-                )
+                data.build_tokens_data(gpt, samples[:step])
+                del samples[:step]
+                trainer.train((gpt,), LogLoss(), batch=1, title=title)
                 save()
-                del data[:step]
-            visualization.title = "LLaMA Training Sample n°" + str(idx) + "/" + str(nbr_of_samples)
-            gpt.train_tokens(
-                data=data,
-                batch=1,
-                visualization=visualization,
-            )
+            title = "LLaMA Training Sample n°" + str(idx) + "/" + str(nbr_of_samples)
+            data.build_tokens_data(gpt, samples)
+            trainer.train((gpt,), LogLoss(), batch=1, title=title)
             save()
             if isinstance(gpt.embedding.tokenizer, ByteTokenizer):
                 scrap_number += 1

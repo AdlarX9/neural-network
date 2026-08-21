@@ -1,7 +1,6 @@
-from core import MLP
+from core import MLP, Data, Trainer, TrainData
 from graphics import regression
 import numpy as np
-from core.utils.typing import TrainData
 import math
 import random
 
@@ -12,21 +11,26 @@ def shape_learning() -> None:
         donut = math.sin(7.5 * circle)
         return donut
 
-    def get_data(dim: int) -> TrainData:
-        data = []
+    def get_data(dim: int) -> Data:
+        data: TrainData = []
         for _ in range(dim):
             x = random.uniform(0, 1)
             y = random.uniform(0, 1)
-            data.append((np.array([[x], [y]]), np.array([[curve(x, y)]])))
-        return data
+            data.append(((np.array([[x], [y]]),), (np.array([[curve(x, y)]]),)))
+        return Data(data)
 
+    lr = 0.001
     neuron_numbers = [2, 40, 40, 40, 40, 40, 40, 1]
-    mlp = MLP(neuron_numbers, 0.001)
+    mlp = MLP(neuron_numbers.copy(), lr)
     name = "shape_learning"
-    mlp.load(name)
+    if mlp.load(name):
+        try:
+            mlp((np.array([[0.5], [0.5]]),), memorize=False)
+        except Exception:
+            mlp = MLP(neuron_numbers.copy(), lr)
 
     batch = 400
-    data = get_data(batch)
-    mlp.train(data=data, batch=batch)
+    trainer = Trainer(get_data(batch))
+    trainer.train((mlp,), batch=batch)
     mlp.save(name)
     regression(mlp, curve)

@@ -1,7 +1,8 @@
 from __future__ import annotations
-from ..layer.layer import Layer
+from typing import Any
+from ..basics.layer import Layer
 import numpy as np
-from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData
+from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData, ParamGrad
 
 
 class BN(Layer):
@@ -13,6 +14,7 @@ class BN(Layer):
         self.mean = np.var([[]])
         self.var = np.var([[]])
         self.x_hat = np.var([[]])
+        self.parameters = ["gamma", "beta"]
 
     def set_input_shape(self: BN, input_shape: ShapeFlow) -> ShapeFlow:
         C, _, _ = input_shape[0]
@@ -40,18 +42,10 @@ class BN(Layer):
         sum_dxhat = np.sum(dx_hat, axis=(1, 2), keepdims=True)
         sum_dxhat_xhat = np.sum(dx_hat * self.x_hat, axis=(1, 2), keepdims=True)
         dx = 1 / np.sqrt(self.var + self.epsilon) * (dx_hat - sum_dxhat / m - self.x_hat * sum_dxhat_xhat / m)
-
-        self.gamma -= self.lr * np.sum(gradient * self.x_hat, axis=(1, 2))
-        self.beta -= self.lr * np.sum(gradient, axis=(1, 2))
         return dx
 
-    def get_data(self: BN) -> SaveData:
-        data = super().get_data()
-        data["gamma"] = self.gamma.flatten().tolist()
-        data["beta"] = self.beta.flatten().tolist()
-        return data
-
-    def load_from_data(self: BN, data: SaveData) -> None:
-        super().load_from_data(data)
-        self.gamma = np.array(data["gamma"]).reshape(self.input_shape[0][0], 1)
-        self.beta = np.array(data["beta"]).reshape(self.input_shape[0][0], 1)
+    def params_gradient(self: BN, gradient) -> ParamGrad:
+        return {
+            "gamma": np.sum(gradient * self.x_hat, axis=(1, 2)),
+            "beta": np.sum(gradient, axis=(1, 2)),
+        }

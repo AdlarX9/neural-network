@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..layer.layer import Layer
+from ..basics.layer import Layer
 import numpy as np
 from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Receive, SaveData
 

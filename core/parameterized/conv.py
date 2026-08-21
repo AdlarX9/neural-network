@@ -1,7 +1,8 @@
 from __future__ import annotations
+from typing import Any
 import numpy as np
-from .layer import Layer
-from ..utils.typing import Shape, ShapeFlow, Tensor, Receive1, SaveData
+from ..basics.layer import Layer
+from ..utils.typing import Shape, ShapeFlow, Tensor, ParamGrad, SaveData
 
 
 def im2col(x: Tensor, K: int, S: int, P: int) -> Tensor:
@@ -57,6 +58,8 @@ class Conv(Layer):
         self.N = N
         self.Xcol: Tensor | None = None
         self.kernels: Tensor = np.array([[[[]]]])
+        self.parameters = ["kernels"]
+        self.kernels_grad: Tensor | None = None
         self.P = P
         if self.P == -1:
             if self.K % 2 == 1:
@@ -88,10 +91,14 @@ class Conv(Layer):
             raise MemoryError
         delta = gradient.reshape(self.N, -1)
         Wgrad = delta @ self.Xcol.T
-        Wgrad = Wgrad.reshape(self.kernels.shape)
+        self.kernels_grad = Wgrad.reshape(self.kernels.shape)
         dXcol = self.kernels.reshape(self.N, -1).T @ delta
-        self.kernels -= self.lr * Wgrad
         return col2im(dXcol, self.input[0].shape, self.K, self.S, self.P)
+
+    def params_gradient(self: Conv, gradient) -> ParamGrad:
+        if self.kernels_grad is None:
+            raise MemoryError
+        return {"kernels": self.kernels_grad}
 
     def get_data(self: Conv) -> SaveData:
         data = super().get_data()
@@ -99,7 +106,6 @@ class Conv(Layer):
         data["S"] = self.S
         data["N"] = self.N
         data["P"] = self.P
-        data["kernels"] = self.kernels.flatten().tolist()
         return data
 
     def load_from_data(self: Conv, data: SaveData) -> None:
@@ -108,4 +114,3 @@ class Conv(Layer):
         self.S = data["S"]
         self.N = data["N"]
         self.P = data["P"]
-        self.kernels = np.array(data["kernels"]).reshape(self.N, self.input_shape[0][0], self.K, self.K)

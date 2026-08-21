@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..layer.layer import Layer
+from ..basics.layer import Layer
 from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Receive
 
 

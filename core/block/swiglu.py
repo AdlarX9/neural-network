@@ -1,10 +1,10 @@
 from __future__ import annotations
-from .block import Block
-from ..transform.duplicate import Duplicate
-from ..transform.multiply import Multiply
+from ..basics.block import Block
+from ..flowmakers.duplicate import Duplicate
+from ..flowmakers.multiply import Multiply
 from .linear import Linear
 from ..activation.silu import SiLU
-from ..layer.layer import Layer
+from ..basics.layer import Layer
 from ..utils.typing import Receive1
 
 

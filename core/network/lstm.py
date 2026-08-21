@@ -1,35 +1,35 @@
 from __future__ import annotations
-from core.exit.exit_loss import ExitLoss
-from .text_network import TextNetwork
+from ..text.text_network import TextNetwork
 from ..block.recurrent import Recurrent
 from ..block.one_hot_maker import OneHotMaker
-from ..layer.embedding import Embedding
-from ..layer.lstm import LSTM
+from ..parameterized.embedding import Embedding
+from ..parameterized.lstm import LSTM
+from ..basics.layer import Layer
 
 
 class LSTMNetwork(TextNetwork):
     def __init__(
         self: LSTMNetwork,
         embedding: Embedding | None = None,
-        lr: float = 0.0001,
-        exit_loss: ExitLoss = ExitLoss(),
+        lr: float = 0.001,
+        more_layers: list[Layer] = [],
     ) -> None:
         if embedding is None:
             return
         layers = []
         input_shape = (0,)
         if embedding is not None:
-            layers = [Recurrent([LSTM()]), OneHotMaker(embedding)]
+            layers = [Recurrent([LSTM()]), OneHotMaker(embedding)] + more_layers
             input_shape = (embedding.dim, -1)
         super().__init__(
-            layers=layers, input_shape=input_shape, lr=lr, exit_loss=exit_loss, embedding=embedding
+            layers=layers, input_shape=input_shape, lr=lr, embedding=embedding
         )
 
     def predict_next_token(self: LSTMNetwork, beginning: str) -> str:
         for layer in self.layers:
             if isinstance(layer, Recurrent):
                 layer.reset_data()
-        one_hot_beginning = self.get_embedded(self.tokenize(beginning))
+        one_hot_beginning = self.get_one_hot(self.tokenize(beginning))
         one_hot_prediction = self((one_hot_beginning,))
         prediction = self.untokenize(self.get_tokens(one_hot_prediction[0]))
         return prediction

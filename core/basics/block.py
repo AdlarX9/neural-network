@@ -1,7 +1,7 @@
 from __future__ import annotations
-from ..layer.layer import Layer
+from .layer import Layer
 from typing import Any, Callable
-from ..utils.typing import ShapeFlow, TensorFlow, Tensor, SaveData, Receive
+from ..utils.typing import ShapeFlow, TensorFlow, Tensor, SaveData, Receive, ParamGrad
 
 
 class Block(Layer):
@@ -13,6 +13,12 @@ class Block(Layer):
         super().set_lr(lr)
         for layer in self.layers:
             layer.set_lr(lr)
+
+    def set_id(self: Block, id: int = 0) -> int:
+        id = super().set_id(id)
+        for layer in self.layers:
+            id = layer.set_id(id)
+        return id
 
     def _distribute(
         self: Block,
@@ -34,24 +40,26 @@ class Block(Layer):
         self.output_shape = self._distribute(input_shape, lambda layer, entry: layer.set_input_shape(entry))
         return self.output_shape
 
-    def __call__(self: Block, entry: TensorFlow, memorize: bool) -> TensorFlow:
+    def __call__(self: Block, entry: TensorFlow, memorize: bool = False) -> TensorFlow:
         super().__call__(entry, memorize)
         output = self._distribute(entry, lambda layer, entry: layer(entry, memorize))
         return output
 
-    def backprop(self: Block, gradient: TensorFlow) -> TensorFlow:
+    def backprop(self: Block, gradient: TensorFlow) -> tuple[TensorFlow, ParamGrad]:
         super().backprop(gradient)
         volume = list(gradient)
+        params: ParamGrad = {}
         for layer in reversed(self.layers):
             beginning, end = min(layer.receive), min(layer.receive) + len(layer.output_shape)
-            input_slice = tuple(volume[beginning:end])
+            input_slice: TensorFlow = tuple(volume[beginning:end])
             del volume[beginning:end]
             output = layer.backprop(input_slice)
-            losses: list[tuple[int, Tensor]] = [(el, output[idx]) for idx, el in enumerate(layer.receive)]
+            params |= output[1]
+            losses: list[tuple[int, Tensor]] = [(el, output[0][idx]) for idx, el in enumerate(layer.receive)]
             losses = sorted(losses, key=lambda x: x[0])
             for pos, loss in losses:
                 volume.insert(pos, loss)
-        return tuple(volume)
+        return tuple(volume), params
 
     def get_data(self: Block) -> SaveData:
         data = super().get_data()
@@ -74,3 +82,27 @@ class Block(Layer):
             else:
                 new_layer.load_from_data(layer_data)
             self.layers.append(new_layer)
+
+    def get_params_data(self: Block) -> list[dict[str, Any]]:
+        data = super().get_params_data()
+        if len(data[0]["parameters"]) == 0:
+            data = []
+        for layer in self.layers:
+            if isinstance(layer, Block):
+                data += layer.get_params_data()
+            else:
+                layer_data = layer.get_params_data()
+                if len(layer_data[0]["parameters"]) > 0:
+                    data += layer_data
+        return data
+
+    def get_layer_by_id(self: Block, id: int) -> Layer | None:
+        for layer in self.layers:
+            if isinstance(layer, Block):
+                nested = layer.get_layer_by_id(id)
+                if nested is not None:
+                    return nested
+            else:
+                if layer._id == id:
+                    return layer
+        return None

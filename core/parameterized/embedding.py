@@ -1,11 +1,11 @@
 from __future__ import annotations
 import numpy as np
-from .layer import Layer
+from ..basics.layer import Layer
 from ..utils.functions import softmax
-from ..tokenizer.tokenizer import Tokenizer
-from ..tokenizer.byte_tokenizer import ByteTokenizer
-from ..tokenizer.word_tokenizer import WordTokenizer
-from ..utils.typing import ShapeFlow, Tensor, Tokens, SaveData
+from ..text.tokenizer import Tokenizer
+from ..text.byte_tokenizer import ByteTokenizer
+from ..text.word_tokenizer import WordTokenizer
+from ..utils.typing import ShapeFlow, Tensor, Tokens, SaveData, ParamGrad
 from graphics import ConsoleVisualization
 import math
 
@@ -31,6 +31,7 @@ class Embedding(Layer):
         self.W_prime: Tensor = np.random.normal(
             -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.tokenizer.length(), self.dim)
         )
+        self.parameters = ["W"]
 
     def set_input_shape(self: Embedding, input_shape: ShapeFlow) -> ShapeFlow:
         if len(input_shape[0]) != 2 or input_shape[0][0] != self.tokenizer.length():
@@ -56,9 +57,12 @@ class Embedding(Layer):
     def descend_gradient(self: Embedding, gradient: Tensor) -> Tensor:
         if self.input is None:
             raise MemoryError
-        new_gradient = self.W.T @ gradient
-        self.W -= self.lr * gradient @ self.input[0].T
-        return new_gradient
+        return self.W.T @ gradient
+
+    def params_gradient(self: Embedding, gradient) -> ParamGrad:
+        if self.input is None:
+            raise MemoryError
+        return {"W": gradient @ self.input[0].T}
 
     def cbow_training(self: Embedding, text: str | Tokens, window: int = 7, batch: int = 10) -> None:
         if isinstance(text, list):
@@ -146,7 +150,6 @@ class Embedding(Layer):
     def get_data(self: Embedding) -> SaveData:
         data = super().get_data()
         data["dim"] = self.dim
-        data["W"] = self.W.flatten().tolist()
         data["W_prime"] = self.W_prime.flatten().tolist()
         tokenizer_data = self.tokenizer.get_data()
         tokenizer_data["class"] = self.tokenizer.__class__.__name__
@@ -156,7 +159,6 @@ class Embedding(Layer):
     def load_from_data(self: Embedding, data: SaveData) -> None:
         super().load_from_data(data)
         self.dim = data["dim"]
-        self.W = np.array(data["W"]).reshape((self.dim, self.input_shape[0][0]))
         self.W_prime = np.array(data["W_prime"]).reshape((self.input_shape[0][0], self.dim))
         tokenizer_class = data["tokenizer"]["class"]
         if tokenizer_class == "ByteTokenizer":

@@ -1,10 +1,10 @@
 from __future__ import annotations
 import numpy as np
-from .block import Block
-from ..layer.fc import FC
-from ..layer.biais import Biais
-from ..layer.embedding import Embedding
-from ..layer.layer import check_shapes
+from ..basics.block import Block
+from ..parameterized.fc import FC
+from ..parameterized.biais import Biais
+from ..parameterized.embedding import Embedding
+from ..basics.layer import check_shapes
 from ..utils.typing import ShapeFlow, Receive1
 
 

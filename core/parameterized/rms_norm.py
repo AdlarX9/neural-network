@@ -1,7 +1,7 @@
 from __future__ import annotations
-from ..layer.layer import Layer
+from ..basics.layer import Layer
 import numpy as np
-from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData
+from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData, ParamGrad
 
 
 class RMSNorm(Layer):
@@ -9,6 +9,7 @@ class RMSNorm(Layer):
         super().__init__(receive)
         self.gamma: Tensor = np.array([[]])
         self.rms: Tensor = np.array([[]])
+        self.parameters = ['gamma']
 
     def set_input_shape(self: RMSNorm, input_shape: ShapeFlow) -> ShapeFlow:
         self.gamma = np.ones((input_shape[0][0], 1))
@@ -28,11 +29,7 @@ class RMSNorm(Layer):
         self.gamma -= self.lr * np.sum(gradient * self.input[0] / self.rms, axis=1, keepdims=True)
         return new_gradient
 
-    def get_data(self: RMSNorm) -> SaveData:
-        data = super().get_data()
-        data["gamma"] = self.gamma.flatten().tolist()
-        return data
-
-    def load_from_data(self: RMSNorm, data: SaveData) -> None:
-        super().load_from_data(data)
-        self.gamma = np.array(data["gamma"]).reshape(self.input_shape[0][0], 1)
+    def params_gradient(self: RMSNorm, gradient) -> ParamGrad:
+        if self.input is None:
+            raise MemoryError
+        return {"gamma": np.sum(gradient * self.input[0] / self.rms, axis=1, keepdims=True)}

@@ -7,12 +7,13 @@ ShapeFlow: TypeAlias = tuple[Shape, ...]
 
 Tensor: TypeAlias = NDArray[np.float64]
 TensorFlow: TypeAlias = tuple[Tensor, ...]
+ParamGrad: TypeAlias = dict[str, Tensor]
 
 Tokens: TypeAlias = list[int]
 
 SaveData: TypeAlias = dict[str, Any]
 
-Batch: TypeAlias = tuple[Tensor, Tensor]
+Batch: TypeAlias = tuple[TensorFlow, TensorFlow]
 TrainData: TypeAlias = list[Batch]
 
 Receive: TypeAlias = tuple[int, ...]

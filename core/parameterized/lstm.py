@@ -1,9 +1,10 @@
 from __future__ import annotations
-from .layer import Layer
+from typing import Any
+from ..basics.layer import Layer
 import numpy as np
 from numpy.typing import NDArray
 from ..utils.functions import sigmoid
-from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData
+from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData, ParamGrad
 
 
 class LSTM(Layer):
@@ -32,8 +33,11 @@ class LSTM(Layer):
         self.bo = np.array([[]])
         self.bc = np.array([[]])
 
+        self.parameters = ["Wf", "Wi", "Wo", "Wc", "Uf", "Ui", "Uo", "Uc", "bf", "bi", "bo", "bc"]
+
         self.gradient_h: Tensor | None = None
         self.gradient_c: Tensor | None = None
+        self.param_grad: ParamGrad | None = None
 
     def reset_data(self: LSTM) -> None:
         self.h = np.zeros_like(self.h)
@@ -153,40 +157,31 @@ class LSTM(Layer):
         )
 
         # Learn weights
-        self.Wf -= self.lr * derivate_f @ x.T
-        self.Wi -= self.lr * derivate_i @ x.T
-        self.Wo -= self.lr * derivate_o @ x.T
-        self.Wc -= self.lr * derivate_c_prime @ x.T
-        self.Uf -= self.lr * derivate_f @ h_before.T
-        self.Ui -= self.lr * derivate_i @ h_before.T
-        self.Uo -= self.lr * derivate_o @ h_before.T
-        self.Uc -= self.lr * derivate_c_prime @ h_before.T
-        self.bf -= self.lr * derivate_f
-        self.bi -= self.lr * derivate_i
-        self.bo -= self.lr * derivate_o
-        self.bc -= self.lr * derivate_c_prime
+        self.param_grad = {
+            "Wf": derivate_f @ x.T,
+            "Wi": derivate_i @ x.T,
+            "Wo": derivate_o @ x.T,
+            "Wc": derivate_c_prime @ x.T,
+            "Uf": derivate_f @ h_before.T,
+            "Ui": derivate_i @ h_before.T,
+            "Uo": derivate_o @ h_before.T,
+            "Uc": derivate_c_prime @ h_before.T,
+            "bf": derivate_f,
+            "bi": derivate_i,
+            "bo": derivate_o,
+            "bc": derivate_c_prime,
+        }
 
         return new_gradient
+
+    def params_gradient(self: LSTM, gradient) -> ParamGrad:
+        if self.param_grad is None:
+            raise MemoryError
+        return self.param_grad
 
     def get_data(self: LSTM) -> SaveData:
         data = super().get_data()
         data["n"] = self.n
-
-        data["Wf"] = self.Wf.flatten().tolist()
-        data["Wi"] = self.Wi.flatten().tolist()
-        data["Wo"] = self.Wo.flatten().tolist()
-        data["Wc"] = self.Wc.flatten().tolist()
-
-        data["Uf"] = self.Uf.flatten().tolist()
-        data["Ui"] = self.Ui.flatten().tolist()
-        data["Uo"] = self.Uo.flatten().tolist()
-        data["Uc"] = self.Uc.flatten().tolist()
-
-        data["bf"] = self.bf.flatten().tolist()
-        data["bi"] = self.bi.flatten().tolist()
-        data["bo"] = self.bo.flatten().tolist()
-        data["bc"] = self.bc.flatten().tolist()
-
         return data
 
     def load_from_data(self: LSTM, data: SaveData) -> None:
@@ -194,18 +189,3 @@ class LSTM(Layer):
         self.n = data["n"]
         self.h = np.zeros(self.input_shape[0])
         self.c = np.zeros(self.input_shape[0])
-
-        self.Wf = np.array(data["Wf"]).reshape(self.n, self.n)
-        self.Wi = np.array(data["Wi"]).reshape(self.n, self.n)
-        self.Wo = np.array(data["Wo"]).reshape(self.n, self.n)
-        self.Wc = np.array(data["Wc"]).reshape(self.n, self.n)
-
-        self.Uf = np.array(data["Uf"]).reshape(self.n, self.n)
-        self.Ui = np.array(data["Ui"]).reshape(self.n, self.n)
-        self.Uo = np.array(data["Uo"]).reshape(self.n, self.n)
-        self.Uc = np.array(data["Uc"]).reshape(self.n, self.n)
-
-        self.bf = np.array(data["bf"]).reshape(self.n, 1)
-        self.bi = np.array(data["bi"]).reshape(self.n, 1)
-        self.bo = np.array(data["bo"]).reshape(self.n, 1)
-        self.bc = np.array(data["bc"]).reshape(self.n, 1)

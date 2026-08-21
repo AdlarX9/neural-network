@@ -1,7 +1,7 @@
 from __future__ import annotations
-from .block import Block
-from ..layer.fc import FC
-from ..layer.biais import Biais
+from ..basics.block import Block
+from ..parameterized.fc import FC
+from ..parameterized.biais import Biais
 from ..utils.typing import Receive1
 
 
