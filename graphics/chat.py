@@ -9,9 +9,13 @@ if TYPE_CHECKING:
 
 
 class ChatWindow:
-    def __init__(self, master: tk.Tk, gpt: GPT) -> None:
+    def __init__(self, master: tk.Tk, gpt: GPT, temperature: float | None = None) -> None:
         self.master = master
         self.gpt = gpt
+        self.temperature = temperature
+        self.temperature_enabled = tk.BooleanVar(value=temperature is not None)
+        initial_temperature = temperature if temperature is not None and temperature > 0 else 1.0
+        self.temperature_value = tk.DoubleVar(value=initial_temperature)
         self.master.title("GPT Chat")
         self.master.minsize(820, 560)
 
@@ -171,6 +175,42 @@ class ChatWindow:
         )
         clear_button.grid(row=3, column=2, sticky=tk.W, padx=(10, 0), pady=(6, 0))
 
+        temperature_check = tk.Checkbutton(
+            inner,
+            text="Activer la température",
+            variable=self.temperature_enabled,
+            command=self._toggle_temperature_slider,
+            bg=self.card,
+            fg=self.text,
+            activebackground=self.card,
+            activeforeground=self.text,
+            selectcolor=self.card,
+            font=("Helvetica", 11),
+            relief=tk.FLAT,
+            bd=0,
+            highlightthickness=0,
+        )
+        temperature_check.grid(row=4, column=0, sticky=tk.W, pady=(14, 0))
+
+        self.temperature_scale = tk.Scale(
+            inner,
+            from_=0.01,
+            to=2.0,
+            resolution=0.01,
+            orient=tk.HORIZONTAL,
+            variable=self.temperature_value,
+            bg=self.card,
+            fg=self.text,
+            troughcolor="#e5e7eb",
+            highlightthickness=0,
+            relief=tk.FLAT,
+            length=260,
+            label="Température",
+            font=("Helvetica", 10),
+        )
+        self.temperature_scale.grid(row=5, column=0, columnspan=3, sticky=tk.W, pady=(6, 0))
+        self._toggle_temperature_slider()
+
         inner.columnconfigure(0, weight=1)
         inner.columnconfigure(1, weight=0)
         inner.columnconfigure(2, weight=0)
@@ -189,6 +229,10 @@ class ChatWindow:
 
         self._append_message("Système", "Prêt. Entre un texte et lance la génération.")
         self.prompt_entry.focus_set()
+
+    def _toggle_temperature_slider(self) -> None:
+        state = tk.NORMAL if self.temperature_enabled.get() else tk.DISABLED
+        self.temperature_scale.configure(state=state)
 
     def _append_message(self, speaker: str, message: str) -> None:
         self.history.configure(state=tk.NORMAL)
@@ -217,8 +261,15 @@ class ChatWindow:
             messagebox.showerror("Valeur invalide", "Le nombre de mots doit être supérieur à 0.")
             return
 
+        selected_temperature: float | None = None
+        if self.temperature_enabled.get():
+            selected_temperature = float(self.temperature_value.get())
+            if selected_temperature <= 0:
+                messagebox.showerror("Valeur invalide", "La température doit être strictement positive.")
+                return
+
         try:
-            completed_sentence = self.gpt.generate(prompt, word_count)
+            completed_sentence = self.gpt.generate(prompt, word_count, selected_temperature)
         except Exception as exc:
             messagebox.showerror("Erreur de génération", str(exc))
             return
@@ -227,7 +278,7 @@ class ChatWindow:
         self._append_message("GPT", completed_sentence)
 
 
-def chat(gpt: GPT) -> None:
+def chat(gpt: GPT, temperature: float | None = None) -> None:
     root = tk.Tk()
-    ChatWindow(root, gpt)
+    ChatWindow(root, gpt, temperature)
     root.mainloop()

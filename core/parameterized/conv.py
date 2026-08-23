@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any
 import numpy as np
 from ..basics.layer import Layer
-from ..utils.typing import Shape, ShapeFlow, Tensor, ParamGrad, SaveData
+from ..utils.typing import Shape, ShapeFlow, Tensor, ParamGrad, SaveData, Receive1
 
 
 def im2col(x: Tensor, K: int, S: int, P: int) -> Tensor:
@@ -51,8 +51,8 @@ def col2im(cols: Tensor, input_shape: Shape, K: int, S: int, P: int) -> Tensor:
 
 
 class Conv(Layer):
-    def __init__(self: Conv, N: int = 0, K: int = 0, S: int = 0, P: int = 0, receive: int = 0):
-        super().__init__((receive,))
+    def __init__(self: Conv, N: int = 0, K: int = 0, S: int = 1, P: int = -1, receive: Receive1 = (0,)):
+        super().__init__(receive)
         self.K = K  # Watching field dimension
         self.S = S  # Stride
         self.N = N

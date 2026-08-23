@@ -5,8 +5,13 @@ from ..utils.typing import ShapeFlow, TensorFlow, Tensor, SaveData, Receive, Par
 
 
 class Block(Layer):
-    def __init__(self: Block, layers: list[Layer] = [], receive: Receive = (0,)) -> None:
-        super().__init__(receive)
+    def __init__(
+        self: Block,
+        layers: list[Layer] = [],
+        receive: Receive = (0,),
+        _receive: int | None = None,
+    ) -> None:
+        super().__init__(receive, _receive)
         self.layers: list[Layer] = layers
 
     def set_lr(self: Block, lr: float) -> None:
@@ -108,3 +113,9 @@ class Block(Layer):
                 if layer._id == id:
                     return layer
         return None
+
+    def get_parameters(self: Block) -> int:
+        nbr = super().get_parameters()
+        for layer in self.layers:
+            nbr += layer.get_parameters()
+        return nbr

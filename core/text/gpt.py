@@ -1,4 +1,5 @@
 from __future__ import annotations
+import numpy as np
 from core.basics.layer import Layer
 from .text_network import TextNetwork
 from ..parameterized.embedding import Embedding
@@ -15,16 +16,26 @@ class GPT(TextNetwork):
     ) -> None:
         super().__init__(layers, input_shape, lr, embedding)
 
-    def generate(self: GPT, sentence: str, nbr_of_tokens: int = 80) -> str:
+    def generate(self: GPT, sentence: str, nbr_of_tokens: int = 80, temperature: float | None = None) -> str:
         for _ in range(nbr_of_tokens):
-            new_token = self.predict_next_token(sentence)
+            new_token = self.predict_next_token(sentence, temperature)
             if self.embedding.tokenizer.__class__.__name__ == "WordTokenizer":
                 sentence += " "
             sentence += new_token
         return sentence
 
-    def predict_next_token(self: GPT, beginning: str) -> str:
+    def predict_next_token(self: GPT, beginning: str, temperature: float | None = None) -> str:
         one_hot = self.get_one_hot(self.tokenize(beginning))
-        result = self((one_hot,))
-        prediction = self.untokenize(self.get_tokens(result[0])[-1:])
+        softmax = self.layers.pop()
+        logits = self((one_hot,))[0]
+        if temperature is not None:
+            logits /= temperature
+        probs = softmax((logits,))[0]
+        self.layers.append(softmax)
+        next_token_prob = probs[:, -1].reshape(-1, 1)
+        if temperature is not None:
+            next_token_index = np.random.choice(len(next_token_prob), p=next_token_prob.ravel())
+        else:
+            next_token_index = self.get_tokens(next_token_prob)[-1]
+        prediction = self.untokenize([next_token_index])
         return prediction

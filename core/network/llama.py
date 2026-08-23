@@ -1,6 +1,6 @@
 from __future__ import annotations
 from ..parameterized.embedding import Embedding
-from ..parameterized.rms_norm import RMSNorm
+from ..parameterized.norm.rms_norm import RMSNorm
 from ..basics.layer import Layer
 from ..activation.softmax import Softmax
 from ..block.one_hot_maker import OneHotMaker

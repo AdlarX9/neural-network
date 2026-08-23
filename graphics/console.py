@@ -2,14 +2,18 @@ from __future__ import annotations
 import shutil
 import sys
 import time
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core import Trainer
 
 
 class ConsoleVisualization:
-    def __init__(
-        self: ConsoleVisualization, total_batches: int = 0, total_items: int = 0, stream=None
-    ) -> None:
-        self.total_batches = max(1, total_batches)
-        self.total_items = max(1, total_items)
+    def __init__(self: ConsoleVisualization, trainer: Trainer, stream=None) -> None:
+        self.total_batches = max(1, trainer.total_batches)
+        self.total_items = max(1, trainer.total_items)
+        self.models = [network.__class__.__name__ for network in trainer.networks]
+        self.parameters = [network.get_parameters() for network in trainer.networks]
         self.stream = stream if stream is not None else sys.stdout
         self.started_at = time.perf_counter()
         self.batch_index = 0
@@ -81,34 +85,43 @@ class ConsoleVisualization:
         batch_progress = self.item_index / self.total_items if self.total_items else 1.0
         batch_completed = self.batch_index - 1 + batch_progress
         batch_remaining = self.total_batches - batch_completed
+        models = ", ".join(
+            [
+                f'{self.models[i]} ({f"{self.parameters[i]:,}".replace(",", " ")})'
+                for i in range(len(self.models))
+            ]
+        )
 
         lines = [
             "╭" + "─" * max(28, term_width - 2) + "╮",
             "│ " + self.title + " " * max(0, term_width - 3 - len(self.title)) + "│",
             "├" + "─" * max(28, term_width - 2) + "┤",
-            f"│ Temps écoulé        : {self._format_duration(elapsed)}"
-            + " " * max(0, term_width - 25 - len(self._format_duration(elapsed)))
+            f"│ Modèle               : {models}"
+            + " " * max(0, term_width - 26 - len(models))
+            + "│",
+            f"│ Temps écoulé         : {self._format_duration(elapsed)}"
+            + " " * max(0, term_width - 26 - len(self._format_duration(elapsed)))
             + "│",
             f"│ Temps restant estimé : {self._format_duration(remaining)}"
             + " " * max(0, term_width - 26 - len(self._format_duration(remaining)))
             + "│",
-            f"│ Batch actuel        : {self.batch_index}/{self.total_batches} (restant {batch_remaining:.2f})"
+            f"│ Batch actuel         : {self.batch_index}/{self.total_batches} (restant {batch_remaining:.2f})"
             + " "
             * max(
                 0,
                 term_width
-                - 25
+                - 26
                 - len(f"{self.batch_index}/{self.total_batches} (restant {batch_remaining:.2f})"),
             )
             + "│",
-            f"│ Données batch       : {self.item_index}/{self.total_items}"
-            + " " * max(0, term_width - 25 - len(f"{self.item_index}/{self.total_items}"))
+            f"│ Données batch        : {self.item_index}/{self.total_items}"
+            + " " * max(0, term_width - 26 - len(f"{self.item_index}/{self.total_items}"))
             + "│",
-            f"│ Loss                : {self.loss:.6f}"
-            + " " * max(0, term_width - 25 - len(f"{self.loss:.6f}"))
+            f"│ Loss                 : {self.loss:.6f}"
+            + " " * max(0, term_width - 26 - len(f"{self.loss:.6f}"))
             + "│",
-            f"│ Accuracy            : {self.accuracy * 100:6.2f}%"
-            + " " * max(0, term_width - 25 - len(f"{self.accuracy * 100:6.2f}%"))
+            f"│ Accuracy             : {self.accuracy * 100:6.2f}%"
+            + " " * max(0, term_width - 26 - len(f"{self.accuracy * 100:6.2f}%"))
             + "│",
             "├" + "─" * max(28, term_width - 2) + "┤",
             "│ Progression totale" + " " * max(0, term_width - 21) + "│",

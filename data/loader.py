@@ -120,6 +120,18 @@ def load_mnist_data(
 
     data: TrainData = []
     for image, label in zip(images, labels, strict=True):
-        data.append(((image.reshape(1, image.shape[0], image.shape[1]),), (_one_hot(int(label)),)))
+        padded_image = np.pad(
+            image,
+            pad_width=((2, 2), (2, 2)),
+            mode="constant",
+            constant_values=0.0,
+        )
+        data.append(
+            (
+                (padded_image.reshape(1, 32, 32),),
+                (_one_hot(int(label)),),
+            )
+        )
+    return data
 
     return data

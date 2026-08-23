@@ -5,7 +5,7 @@ from ..utils.functions import softmax
 from ..text.tokenizer import Tokenizer
 from ..text.byte_tokenizer import ByteTokenizer
 from ..text.word_tokenizer import WordTokenizer
-from ..utils.typing import ShapeFlow, Tensor, Tokens, SaveData, ParamGrad
+from ..utils.typing import ShapeFlow, Tensor, Tokens, SaveData, ParamGrad, Receive1
 from graphics import ConsoleVisualization
 import math
 
@@ -15,9 +15,9 @@ class Embedding(Layer):
         self: Embedding,
         tokenizer: Tokenizer | None = None,
         dim: int = 100,
-        receive: int = 0,
+        receive: Receive1 = (0,),
     ) -> None:
-        Layer.__init__(self, (receive,))
+        Layer.__init__(self, receive)
         self.dim: int = dim
         self.tokenizer = ByteTokenizer()
         if tokenizer is not None:

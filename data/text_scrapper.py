@@ -3,9 +3,33 @@ import requests
 from bs4 import BeautifulSoup
 from core import normalize
 import os
+import re
 
 WIKI_BASE = "https://fr.wikipedia.org"
 name = "scrapped"
+
+
+def clean_text(text: str) -> str:
+    # Normalise les espaces
+    text = re.sub(r"\s+", " ", text)
+    # Supprime les références Wikipédia [1], [ 1 ], [ 12 ], etc.
+    text = re.sub(r"\[\s*\d+\s*\]", "", text)
+    # Supprime les crochets restants éventuellement présents
+    text = text.replace("[", "").replace("]", "")
+    # Supprime les espaces avant la ponctuation
+    text = re.sub(r"\s+([,.!?;:])", r"\1", text)
+    # Supprime les espaces autour des parenthèses
+    text = re.sub(r"\(\s+", "(", text)
+    text = re.sub(r"\s+\)", ")", text)
+    # Corrige les espaces autour des apostrophes
+    # "l ' oculométrie" -> "l'oculométrie"
+    text = re.sub(r"\s+'\s*", "'", text)
+    # Corrige les espaces autour des tirets
+    # à utiliser seulement si c'est souhaité dans ton corpus
+    text = re.sub(r"\s+-\s+", "-", text)
+    # Supprime les espaces superflus en début/fin
+    text = text.strip()
+    return text
 
 
 def get_article_text(url: str):
@@ -28,7 +52,9 @@ def get_article_text(url: str):
     return text, links
 
 
-def scrap_text(length: int, offset: int = 0, must_normalize: bool = False, filename: str | None = None) -> str:
+def scrap_text(
+    length: int, offset: int = 0, must_normalize: bool = False, filename: str | None = None
+) -> str:
     directory = os.path.join("data", "text")
     if filename is None:
         filename = name
@@ -48,20 +74,14 @@ def scrap_text(length: int, offset: int = 0, must_normalize: bool = False, filen
     words: list[str] = []
 
     current_url = "https://fr.wikipedia.org/wiki/Sp%C3%A9cial:Page_au_hasard"
-    visited = set()
     while len(words) < length + offset:
         try:
-            text, links = get_article_text(current_url)
+            text, _ = get_article_text(current_url)
+            text = clean_text(text)
             if must_normalize:
                 text = normalize(text)
             if text:
                 words.extend(text.split())
-            visited.add(current_url)
-            links = [link for link in links if link not in visited]
-            if links:
-                current_url = random.choice(links)
-            else:
-                current_url = "https://fr.wikipedia.org/wiki/Sp%C3%A9cial:Page_au_hasard"
             print(f"{len(words)}/{length + offset} mots collectés", end="\r")
         except Exception:
             current_url = "https://fr.wikipedia.org/wiki/Sp%C3%A9cial:Page_au_hasard"

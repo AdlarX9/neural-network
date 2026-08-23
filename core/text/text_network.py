@@ -89,3 +89,6 @@ class TextNetwork(Network):
         if self.embedding._id == id:
             return self.embedding
         return super().get_layer_by_id(id)
+
+    def get_parameters(self: TextNetwork) -> int:
+        return super().get_parameters() + self.embedding.get_parameters()

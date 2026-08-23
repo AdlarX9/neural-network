@@ -6,7 +6,7 @@ from graphics import view_numbers
 def number_recognition() -> None:
     name = "number_recognition"
     cnn = CNN(
-        parameters=([(1, 28, 28, 0), (32, 3, 2, -1), (64, 3, 2, -1), (128, 3, 2, -1)], [10]),
+        parameters=([(1, 32, 32, 0), (32, 3, 2, 1), (64, 3, 2, 1), (128, 3, 2, 1)], [10]),
         lr=0.005,
         more_layers=[Softmax()],
     )

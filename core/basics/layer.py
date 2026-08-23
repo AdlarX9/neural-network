@@ -22,7 +22,9 @@ def check_shapes(shape1: ShapeFlow, shape2: ShapeFlow) -> bool:
 
 
 class Layer:
-    def __init__(self: Layer, receive: Receive = (0,)) -> None:
+    def __init__(self: Layer, receive: Receive = (0,), _receive: int | None = None) -> None:
+        if _receive:
+            self._receive = _receive
         self.lr: float = 0.0
         self.input_shape: ShapeFlow = ((),)
         self.output_shape: ShapeFlow = ((),)
@@ -135,6 +137,9 @@ class Layer:
         if self._id == id:
             return self
         return None
+
+    def get_parameters(self: Layer) -> int:
+        return sum([getattr(self, param_name).size for param_name in self.parameters])
 
     def save(self: Layer, name: str) -> None:
         from data import SaveHandler

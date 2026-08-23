@@ -1,18 +1,19 @@
 from core import LLaMA, Embedding, ByteTokenizer, WordTokenizer, Data, Trainer, LogLoss
-from graphics import ConsoleVisualization
 from data import scrap_text, SaveHandler
 from graphics import chat
 import math
 
 
 def llama():
-    gpt_name = "llama"
+    gpt_name = "llama-3m"
     if not SaveHandler().has(gpt_name):
         # Build Embedding
         tokenizer = ByteTokenizer(8192)
         # tokenizer = WordTokenizer()
         embedding = Embedding(tokenizer, 128)
-        text = scrap_text(1_000_000, filename="scrapped-0")
+        text = (
+            scrap_text(1_000_000, filename="scrapped-0") + " " + scrap_text(1_000_000, filename="scrapped-1")
+        )
         embedding.build_vocab(text)
         embedding.set_input_shape(((tokenizer.length(), -1),))
         if isinstance(tokenizer, WordTokenizer):
@@ -26,6 +27,7 @@ def llama():
             head_numbers=head_numbers,
             embedding=embedding,
         )
+        gpt.save(gpt_name)
     else:
         gpt = LLaMA()
         gpt.load(gpt_name)
@@ -35,13 +37,11 @@ def llama():
     data = Data()
 
     trainer = Trainer((gpt,), data=data, loss=LogLoss())
-    trainer.adamw = True
-    trainer.gradient_clipping = True
-    trainer.weight_decay = 0.1
-    trainer.max_lr = (3e-4,)
-    trainer.final_lr = (3e-5,)
-    trainer.warmup_steps = 1000
-    trainer.cosine_decay = (15000, 25000)
+    trainer.adam = True
+    trainer.max_lr = (5e-4,)
+    trainer.final_lr = (5e-5,)
+    trainer.warmup_steps = 1 * 500
+    trainer.cosine_decay = (10 * 500, 45 * 500)
 
     try:
         while True:
@@ -54,24 +54,17 @@ def llama():
             def save():
                 gpt.save(gpt_name)
 
-            step = 500
+            step = 200
             idx = 1
             nbr_of_samples = math.ceil(len(samples) / step)
             while len(samples) >= step:
-                title = (
-                    "LLaMA Training Sample ("
-                    + str(scrap_number)
-                    + ") n°"
-                    + str(idx)
-                    + "/"
-                    + str(nbr_of_samples)
-                )
+                title = f"{gpt_name} training scrapped-{str(scrap_number)} n°{str(idx)}/{str(nbr_of_samples)}"
                 idx += 1
                 data.build_tokens_data(gpt, samples[:step])
                 del samples[:step]
                 trainer.train(batch=1, title=title)
                 save()
-            title = "LLaMA Training Sample n°" + str(idx) + "/" + str(nbr_of_samples)
+            title = f"{gpt_name} training scrapped-{str(scrap_number)} n°{str(idx)}/{str(nbr_of_samples)}"
             data.build_tokens_data(gpt, samples)
             trainer.train(batch=1, title=title)
             save()

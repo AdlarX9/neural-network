@@ -7,7 +7,7 @@ import numpy as np
 if TYPE_CHECKING:
     from core import Network
 
-GRID_SIZE: Tuple[int, int] = (28, 28)
+GRID_SIZE: Tuple[int, int] = (32, 32)
 PIXEL_SIZE = 30
 PRED_BAR_WIDTH = 240
 

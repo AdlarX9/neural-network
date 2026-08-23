@@ -103,7 +103,7 @@ class SaveHandler:
         with open(path, "w", encoding="utf-8") as f:
             data = layer.get_data()
             data["class"] = layer.__class__.__name__
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            json.dump(data, f, ensure_ascii=False)
 
     def load_json(self: SaveHandler, path: str) -> core.Layer:
         with open(path, "r", encoding="utf-8") as f:

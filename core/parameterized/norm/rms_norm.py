@@ -1,7 +1,7 @@
 from __future__ import annotations
-from ..basics.layer import Layer
+from ...basics.layer import Layer
 import numpy as np
-from ..utils.typing import ShapeFlow, Tensor, Receive1, SaveData, ParamGrad
+from ...utils.typing import ShapeFlow, Tensor, Receive1, ParamGrad
 
 
 class RMSNorm(Layer):
@@ -25,8 +25,6 @@ class RMSNorm(Layer):
         d = self.input[0].shape[0]
         dot = np.sum(gradient * self.input[0], axis=0, keepdims=True)
         new_gradient = self.gamma / self.rms * (gradient - self.input[0] * dot / (d * self.rms**2))
-
-        self.gamma -= self.lr * np.sum(gradient * self.input[0] / self.rms, axis=1, keepdims=True)
         return new_gradient
 
     def params_gradient(self: RMSNorm, gradient) -> ParamGrad:

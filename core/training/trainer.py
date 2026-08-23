@@ -153,15 +153,12 @@ class Trainer:
         self.losses.append(losses)
 
     def start_visualization(self: Trainer, title: str | None = None) -> None:
-        self._storage["dashboard"] = ConsoleVisualization(
-            self.total_batches,
-            self.total_items,
-        )
+        self._storage["dashboard"] = ConsoleVisualization(self)
         if title is not None:
             self._storage["dashboard"].title = title
 
     def visualize(self: Trainer, batch_index: int, item_index: int) -> None:
-        max_remember = 500
+        max_remember = 50
         average_loss = [sum(el) / len(el) for el in self.losses[-max_remember:]]
         average_loss = sum(average_loss) / len(average_loss)
         average_accuracy = [sum(el) / len(el) for el in self.accuracies[-max_remember:]]
