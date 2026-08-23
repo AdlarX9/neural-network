@@ -34,20 +34,22 @@ class Embedding(Layer):
         self.parameters = ["W"]
 
     def set_input_shape(self: Embedding, input_shape: ShapeFlow) -> ShapeFlow:
-        if len(input_shape[0]) != 2 or input_shape[0][0] != self.tokenizer.length():
-            raise ValueError(
-                "Expected dimension does not fit Tokenizer requiremenents:",
-                (self.tokenizer.length(), 1),
-                "!=",
-                input_shape,
-            )
+        """
+        bold assumption: input_shape[0][0] == self.tokenizer.length()
+        """
+        vocab_size = input_shape[0][0]
+        if vocab_size == -1:
+            vocab_size = self.tokenizer.length()
+
         self.W: Tensor = np.random.normal(
-            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.dim, self.tokenizer.length())
+            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.dim, vocab_size)
         )
         self.W_prime: Tensor = np.random.normal(
-            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (self.tokenizer.length(), self.dim)
+            -1 / np.sqrt(self.dim), 1 / np.sqrt(self.dim), (vocab_size, self.dim)
         )
-        super().set_input_shape(input_shape)
+
+        n, p = input_shape[0]
+        super().set_input_shape(((vocab_size, p),))
         self.output_shape = ((self.dim, self.input_shape[0][1]),)
         return self.output_shape
 
@@ -63,54 +65,6 @@ class Embedding(Layer):
         if self.input is None:
             raise MemoryError
         return {"W": gradient @ self.input[0].T}
-
-    def cbow_training(self: Embedding, text: str | Tokens, window: int = 7, batch: int = 10) -> None:
-        if isinstance(text, list):
-            tokens = text
-        else:
-            tokens: Tokens = self.tokenizer.tokenize(text)
-        dashboard = ConsoleVisualization(batch, len(tokens) - 2 * window)
-        max_length: int = 500
-        corrects: list[bool] = []
-        losses: list[float] = []
-        for batch_index in range(1, batch + 1):
-            for i in range(window, len(tokens) - window):
-                token = tokens[i]
-
-                # Context vector
-                context_tokens = tokens[i - window : i] + tokens[i + 1 : i + window + 1]
-                one_hots = [self.tokenizer.get_one_hot(word) for word in context_tokens]
-                embedded_contexts: list[Tensor] = [
-                    self.W[:, context_token].reshape(-1, 1) for context_token in context_tokens
-                ]
-                embedded_context = sum(embedded_contexts) / len(embedded_contexts)
-
-                # Compute score
-                score = self.W_prime @ embedded_context
-                probability = softmax(score)
-
-                # Learn
-                gradient = probability.copy()
-                gradient[token, 0] -= 1
-                new_gradient = self.W_prime.T @ gradient
-                self.W_prime -= self.lr * gradient @ embedded_context.T  # type: ignore
-                self.W -= self.lr * new_gradient @ sum(one_hots).T / (2 * window)  # type: ignore
-
-                # Dashboard
-                correct = bool(np.argmax(probability) == token)
-                corrects.append(correct)
-                if len(corrects) > max_length:
-                    corrects.pop(0)
-                loss = -math.log(probability[token, 0])
-                losses.append(loss)
-                if len(losses) > max_length:
-                    losses.pop(0)
-                dashboard.update(
-                    batch_index,
-                    i + 1 - window,
-                    sum(losses) / len(losses),
-                    corrects.count(True) / len(corrects),
-                )
 
     def build_vocab(self: Embedding, text: str) -> None:
         self.tokenizer.build_vocab(text)
@@ -169,3 +123,56 @@ class Embedding(Layer):
             self.tokenizer.load_from_data(data["tokenizer"])
         else:
             raise MemoryError
+
+    def cbow_training(self: Embedding, text: str | Tokens, window: int = 7, batch: int = 10) -> None:
+        if isinstance(text, list):
+            tokens = text
+        else:
+            tokens: Tokens = self.tokenizer.tokenize(text)
+        dashboard = ConsoleVisualization()
+        dashboard.total_batches = batch
+        dashboard.total_items = len(tokens) - 2 * window
+        dashboard.models = [self.__class__.__name__]
+        dashboard.parameters = [self.get_parameters() * 2]
+
+        max_length: int = 500
+        corrects: list[bool] = []
+        losses: list[float] = []
+        for batch_index in range(1, batch + 1):
+            for i in range(window, len(tokens) - window):
+                token = tokens[i]
+
+                # Context vector
+                context_tokens = tokens[i - window : i] + tokens[i + 1 : i + window + 1]
+                one_hots = [self.tokenizer.get_one_hot(word) for word in context_tokens]
+                embedded_contexts: list[Tensor] = [
+                    self.W[:, context_token].reshape(-1, 1) for context_token in context_tokens
+                ]
+                embedded_context = sum(embedded_contexts) / len(embedded_contexts)
+
+                # Compute score
+                score = self.W_prime @ embedded_context
+                probability = softmax(score)
+
+                # Learn
+                gradient = probability.copy()
+                gradient[token, 0] -= 1
+                new_gradient = self.W_prime.T @ gradient
+                self.W_prime -= self.lr * gradient @ embedded_context.T  # type: ignore
+                self.W -= self.lr * new_gradient @ sum(one_hots).T / (2 * window)  # type: ignore
+
+                # Dashboard
+                correct = bool(np.argmax(probability) == token)
+                corrects.append(correct)
+                if len(corrects) > max_length:
+                    corrects.pop(0)
+                loss = -math.log(probability[token, 0])
+                losses.append(loss)
+                if len(losses) > max_length:
+                    losses.pop(0)
+                dashboard.update(
+                    batch_index,
+                    i + 1 - window,
+                    sum(losses) / len(losses),
+                    corrects.count(True) / len(corrects),
+                )

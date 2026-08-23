@@ -6,7 +6,6 @@ from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Receive, SaveData
 
 class Concat(Layer):
     def __init__(self: Concat, axis: int = 0, receive: Receive = (0,)) -> None:
-        self._receive = -1
         self.axis = axis
         super().__init__(receive)
 

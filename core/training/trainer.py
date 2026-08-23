@@ -5,16 +5,16 @@ import time
 import numpy as np
 from graphics import ConsoleVisualization
 from .data import Data
-from ..basics.network import Network
 from ..loss.loss import Loss
 from ..loss.squared_loss import SquaredLoss
 from ..utils.typing import TensorFlow, ParamGrad, Tensor
+from ..basics.layer import Layer
 
 
 class Trainer:
     def __init__(
         self: Trainer,
-        networks: tuple[Network, ...] = (),
+        units: list[dict[str, Any]] = [],
         data: Data = Data(),
         loss: Loss = SquaredLoss(),
         checkpoint: Callable[[Trainer, int]] = lambda trainer, epochs: None,
@@ -22,91 +22,95 @@ class Trainer:
         self._storage: dict[Any, Any] = {}
         self.checkpoint: Callable[[Trainer, int]] = checkpoint
 
-        for network in networks:
-            network.set_id()
-        self.networks: tuple[Network, ...] = networks
-        self.loss: Loss = loss
-
+        self.t: int = 0
         self.data: Data = data
         self.total_batches: int = 0
         self.total_items: int = 0
         self.started_at: float = 0
 
+        self.loss: Loss = loss
         self.accuracies: list[tuple[float, ...]] = []
         self.losses: list[tuple[float, ...]] = []
 
-        self.adam: bool = False
-        self.adamw: bool = False
-        self.gradient_clipping: bool = False
+        self.layers: list[Layer] = [el["layer"] for el in units]
+        for layer in self.layers:
+            layer.set_id()
 
-        self.t: int = 0
-        self.m: dict[str, Tensor] = {}
-        self.v: dict[str, Tensor] = {}
-        self.beta1: float = 0.9
-        self.beta2: float = 0.95
-        self.epsilon: float = 1e-8
-        self.weight_decay: float = 0
-        self.g_max: float = 1
+        self.adam: list[bool] = [el.get("adam", False) for el in units]
+        self.adamw: list[bool] = [el.get("adamw", False) for el in units]
+        self.gradient_clipping: list[bool] = [el.get("gradient_clipping", False) for el in units]
 
-        self.warmup_steps: int = 0
-        self.max_lr: tuple[float, ...] = tuple([network.lr for network in self.networks])
-        self.final_lr: tuple[float, ...] = self.max_lr
-        self.cosine_decay: tuple[int, int] = (0, 1)
+        self.m: list[dict[str, Tensor]] = [{} for _ in range(len(units))]
+        self.v: list[dict[str, Tensor]] = [{} for _ in range(len(units))]
+        self.beta1: list[float] = [el.get("beta1", 0.9) for el in units]
+        self.beta2: list[float] = [el.get("beta2", 0.95) for el in units]
+        self.epsilon: list[float] = [el.get("epsilon", 1e-8) for el in units]
+        self.weight_decay: list[float] = [el.get("weight_decay", 0) for el in units]
+        self.g_max: list[float] = [el.get("g_max", 1) for el in units]
 
-    def optimize_model(self: Trainer, param_gradients: ParamGrad) -> None:
+        self.warmup_steps: list[int] = [el.get("warmup_steps", 0) for el in units]
+        self.max_lr: list[float] = [units[i].get("max_lr", self.layers[i].lr) for i in range(len(units))]
+        self.final_lr: list[float] = [units[i].get("final_lr", self.max_lr[i]) for i in range(len(units))]
+        self.cosine_decay: list[tuple[int, int]] = [el.get("cosine_decay", (0, 1)) for el in units]
+
+    def optimize_model(self: Trainer, idx, param_gradients: ParamGrad) -> None:
         """
         On part du principe qu'on entraîne qu'un seul réseau, pour l'instant : à modifier par la suite
         """
-        network = self.networks[0]
-        max_lr = self.max_lr[0]
-        final_lr = self.final_lr[0]
-        if self.t <= self.warmup_steps + 1:
-            lr = max_lr / (self.warmup_steps + 1) * self.t
-            network.set_lr(lr)
-        t_0, t_f = self.cosine_decay
+        layer: Layer = self.layers[idx]
+        max_lr: float = self.max_lr[idx]
+        final_lr: float = self.final_lr[idx]
+        if self.t <= self.warmup_steps[idx] + 1:
+            lr = max_lr / (self.warmup_steps[idx] + 1) * self.t
+            layer.set_lr(lr)
+        t_0, t_f = self.cosine_decay[idx]
         if t_0 < self.t <= t_f:
             lr = final_lr + (max_lr - final_lr) / 2 * (1 + math.cos(math.pi * (self.t - t_0) / (t_f - t_0)))
-            network.set_lr(lr)
+            layer.set_lr(lr)
         scale = 1
-        if self.gradient_clipping:
+        if self.gradient_clipping[idx]:
             global_norm = np.sqrt(sum(np.sum(gradient**2) for gradient in param_gradients.values()))
-            if global_norm > self.g_max:
-                scale = self.g_max / global_norm
-        for idx, grad in param_gradients.items():
-            split = idx.split(".")
+            if global_norm > self.g_max[idx]:
+                scale = self.g_max[idx] / global_norm
+        for j, grad in param_gradients.items():
+            split = j.split(".")
             if len(split) != 2:
                 raise ValueError
             layer_id = int(split[0])
             param_name = split[1]
-            layer = network.get_layer_by_id(layer_id)
-            if layer is None:
+            parameterized = layer.get_layer_by_id(layer_id)
+            if parameterized is None:
                 raise ValueError
-            param: Tensor = getattr(layer, param_name)
+            if parameterized.frozen:
+                continue
+            param: Tensor = getattr(parameterized, param_name)
             update = grad
-            if self.adam or self.adamw:
-                m: Tensor = self.m.get(idx, np.zeros_like(param))
-                v: Tensor = self.v.get(idx, np.zeros_like(param))
-                m = self.beta1 * m + (1 - self.beta1) * grad
-                v = self.beta1 * v + (1 - self.beta1) * grad**2
-                self.m[idx] = m
-                self.v[idx] = v
-                m = m / (1 - self.beta1**self.t)
-                v = v / (1 - self.beta2**self.t)
-                update = m / (np.sqrt(v) + self.epsilon)
-            if self.gradient_clipping:
+            if self.adam[idx] or self.adamw[idx]:
+                m: Tensor = self.m[idx].get(j, np.zeros_like(param))
+                v: Tensor = self.v[idx].get(j, np.zeros_like(param))
+                m = self.beta1[idx] * m + (1 - self.beta1[idx]) * grad
+                v = self.beta1[idx] * v + (1 - self.beta1[idx]) * grad**2
+                self.m[idx][j] = m
+                self.v[idx][j] = v
+                m = m / (1 - self.beta1[idx] ** self.t)
+                v = v / (1 - self.beta2[idx] ** self.t)
+                update = m / (np.sqrt(v) + self.epsilon[idx])
+            if self.gradient_clipping[idx]:
                 update *= scale
-            if self.adamw:
-                new_param = (1 - layer.lr * self.weight_decay) * param - layer.lr * update
+            if self.adamw[idx]:
+                new_param = (
+                    1 - parameterized.lr * self.weight_decay[idx]
+                ) * param - parameterized.lr * update
             else:
-                new_param = param - layer.lr * update
-            setattr(layer, param_name, new_param)
+                new_param = param - parameterized.lr * update
+            setattr(parameterized, param_name, new_param)
 
     def single_train(self: Trainer, entry: TensorFlow, answer: TensorFlow) -> TensorFlow:
-        network = self.networks[0]
-        prediction = network(entry, memorize=True)
+        layer = self.layers[0]
+        prediction = layer(entry, memorize=True)
         gradients = self.loss.get_gradient(prediction, answer)
-        _, param_gradients = network.backprop(gradients)
-        self.optimize_model(param_gradients)
+        _, param_gradients = layer.backprop(gradients)
+        self.optimize_model(0, param_gradients)
         return prediction
 
     def train(

@@ -5,7 +5,6 @@ from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Receive2
 
 class Matmul(Layer):
     def __init__(self: Matmul, receive: Receive2 = (0, 1)) -> None:
-        self._receive = 2
         super().__init__(receive)
 
     def set_input_shape(self: Matmul, input_shape: ShapeFlow) -> ShapeFlow:

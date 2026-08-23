@@ -2,10 +2,10 @@ from __future__ import annotations
 from ..parameterized.fc import FC
 from ..parameterized.biais import Biais
 from ..activation.relu import ReLU
-from ..basics.network import Network
+from ..basics.block import Block
 
 
-class MLP(Network):
+class MLP(Block):
     def __init__(
         self: MLP,
         neuron_numbers: list[int] = [1, 1],
@@ -20,4 +20,6 @@ class MLP(Network):
             layers.append(Biais())
             layers.append(ReLU())
         layers.pop()
-        super().__init__(layers, input_shape, lr)
+        super().__init__(layers)
+        self.set_lr(lr)
+        self.set_input_shape((input_shape,))

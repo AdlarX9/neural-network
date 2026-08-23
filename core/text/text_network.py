@@ -1,27 +1,29 @@
 from __future__ import annotations
 from typing import Any
-from core.basics.block import Block
-from core.basics.layer import Layer
-from ..basics.network import Network
+from ..basics.block import Block
+from ..basics.layer import Layer
 from ..parameterized.embedding import Embedding
 from .byte_tokenizer import ByteTokenizer
-from ..utils.typing import Shape, Tensor, TensorFlow, Tokens, SaveData, ParamGrad
+from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Tokens, SaveData, ParamGrad, Receive1
 
 
-class TextNetwork(Network):
+class TextNetwork(Block):
     def __init__(
         self: TextNetwork,
         layers: list[Layer] = [],
-        input_shape: Shape = (0,),
-        lr: float = 0.001,
         embedding: Embedding = Embedding(),
+        receive: Receive1 = (0,)
     ) -> None:
         self.embedding: Embedding = embedding
-        super().__init__(layers, input_shape, lr)
+        super().__init__(layers, receive)
 
     def set_lr(self: TextNetwork, lr: float) -> None:
         super().set_lr(lr)
         self.embedding.set_lr(lr)
+
+    def set_input_shape(self: TextNetwork, input_shape: ShapeFlow) -> ShapeFlow:
+        input_shape = self.embedding.set_input_shape(input_shape)
+        return super().set_input_shape(input_shape)
 
     def tokenize(self: TextNetwork, text: str) -> Tokens:
         return self.embedding.tokenize(text)
@@ -37,6 +39,10 @@ class TextNetwork(Network):
 
     def untokenize(self: TextNetwork, tokens: Tokens) -> str:
         return self.embedding.untokenize(tokens)
+
+    def build_vocab(self: TextNetwork, corpus: str) -> None:
+        self.embedding.tokenizer.build_vocab(corpus)
+        self.set_input_shape(((self.embedding.tokenizer.length(), -1),))
 
     def __call__(self: TextNetwork, entry: TensorFlow, memorize: bool = False) -> TensorFlow:
         entry = self.embedding(entry, memorize)

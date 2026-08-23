@@ -1,9 +1,10 @@
 from __future__ import annotations
+from .ddpm_pad_mask import DDPMPadMask
 from ...basics.layer import Layer
 from ...basics.block import Block
 from ...transform.reshape import Reshape
-from ...block.mha import MHA
 from ...utils.typing import Receive1, ShapeFlow, SaveData
+from ...block.mha import MHA
 
 
 class DDPMSelfAttention(Block):
@@ -13,9 +14,10 @@ class DDPMSelfAttention(Block):
 
     def _get_layers(self: DDPMSelfAttention, shape: ShapeFlow) -> list[Layer]:
         C, H, W = shape[0]
+        d_h = C // H
         layers: list[Layer] = [
             Reshape(shape=(C, H * W)),
-            MHA(H=self.H),
+            MHA(H, mask=DDPMPadMask()),
             Reshape(shape=(C, H, W)),
         ]
         return layers

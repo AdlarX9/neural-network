@@ -9,9 +9,8 @@ class Block(Layer):
         self: Block,
         layers: list[Layer] = [],
         receive: Receive = (0,),
-        _receive: int | None = None,
     ) -> None:
-        super().__init__(receive, _receive)
+        super().__init__(receive)
         self.layers: list[Layer] = layers
 
     def set_lr(self: Block, lr: float) -> None:
@@ -119,3 +118,29 @@ class Block(Layer):
         for layer in self.layers:
             nbr += layer.get_parameters()
         return nbr
+
+    def frozen(self: Block) -> None:
+        super().freeze()
+        for layer in self.layers:
+            layer.freeze()
+
+    def __getitem__(self: Block, key):
+        if isinstance(key, (int, slice)):
+            return self.layers[key]
+
+        if isinstance(key, type) and issubclass(key, Layer):
+            layers = []
+            for layer in self.layers:
+                if isinstance(layer, key):
+                    layers.append(layer)
+                if isinstance(layer, Block):
+                    layers.extend(layer[key])  # type: ignore
+            return layers
+
+        raise TypeError(f"Invalid key type: {type(key)}")
+
+    def __setitem__(self, key, value):
+        self.layers[key] = value
+
+    def __delitem__(self, key):
+        del self.layers[key]

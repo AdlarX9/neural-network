@@ -16,20 +16,25 @@ from ..utils.typing import ShapeFlow, Receive1, SaveData
 class MHA(Block):
     """Stands for Multi-Head Self-Attention"""
 
-    def __init__(self: MHA, H: int = 1, receive: Receive1 = (0,)) -> None:
+    def __init__(self: MHA, H: int = 1, mask: Layer | None = None, receive: Receive1 = (0,)) -> None:
         self.H: int = H
         self.d_h: int = 0
+        self.mask = mask
         super().__init__([], receive)
 
     def _get_layers(self: MHA) -> list[Layer]:
         layers = [
-            Duplicate(3),
+            Duplicate(3, receive=(0,)),
             MHFC(self.H, self.d_h, receive=(0,)),  # Q
             MHFC(self.H, self.d_h, receive=(1,)),  # K
             MHFC(self.H, self.d_h, receive=(2,)),  # V
             Transpose(receive=(1,)),  # K^T
             Matmul(receive=(1, 0)),  # K^T @ Q
             Scale(1 / math.sqrt(self.d_h), receive=(0,)),  # K^T @ Q / sqrt(d_h)
+        ]
+        if self.mask:
+            layers.append(self.mask)
+        layers += [
             Softmax(axis=1, receive=(0,)),  # Softmax(K^T @ Q / sqrt(d_h))
             Matmul(receive=(1, 0)),  # V @ Softmax(K^T @ Q / sqrt(d_h))
             Reshape((self.H * self.d_h, -1), receive=(0,)),  # Concat head results

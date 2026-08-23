@@ -11,21 +11,17 @@ from ...activation.silu import SiLU
 from ...basics.block import Block
 from ...block.linear import Linear
 from ...flowmakers.duplicate import Duplicate
-from ...flowmakers.concat import Concat
 from ...flowmakers.add import Add
-from ...parameterized.fc import FC
 from ...transform.reshape import Reshape
 from ...parameterized.norm.group_norm import GroupNorm
-from ...basics.network import Network
 
 
 class DDPMResBlock(Block):
     def __init__(self: DDPMResBlock, C: int = -1, receive: Receive2 = (0, 1)) -> None:
         """
-        0: image          -> | 0: image transformée
-        1: time embedding    | 1: time embedding
+        0: image          | -> 0: image transformée
+        1: time embedding |
         """
-        self._receive = 2
         self.C = C
         super().__init__([], receive)
 
@@ -38,7 +34,6 @@ class DDPMResBlock(Block):
             GroupNorm(groups=32, receive=(0,)),
             SiLU(receive=(0,)),
             Conv(N=self.C, K=3, receive=(0,)),
-            Duplicate(factor=2, receive=(2,)),
             Linear(neuron_number=self.C, receive=(2,)),
             Reshape(shape=(self.C, 1, 1), receive=(2,)),
             Add(receive=(0, 2)),

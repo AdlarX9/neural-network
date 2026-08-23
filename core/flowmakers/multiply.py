@@ -5,7 +5,6 @@ from ..utils.typing import ShapeFlow, Tensor, TensorFlow, Receive
 
 class Multiply(Layer):
     def __init__(self: Multiply, receive: Receive = (0,)) -> None:
-        self._receive = -1
         super().__init__(receive)
 
     def set_input_shape(self: Multiply, input_shape: ShapeFlow) -> ShapeFlow:

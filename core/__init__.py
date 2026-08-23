@@ -1,6 +1,5 @@
 from .training.trainer import Trainer
 from .training.data import Data
-from .basics.network import Network
 from .network.ddpm.ddpm import DDPM
 from .network.mlp import MLP
 from .network.cnn import CNN
@@ -10,7 +9,8 @@ from .network.ddpm.ddpm_res_block import DDPMResBlock
 from .network.ddpm.ddpm_cross_attention import DDPMCrossAttention
 from .network.ddpm.ddpm_self_attention import DDPMSelfAttention
 from .network.ddpm.ddpm_up_sample import DDPMUpSample
-from .network.ddpm.ddpm_down_sample import DDPMDownSample
+from .network.ddpm.ddpm_text_encoder import DDPMTextEncoder
+from .network.ddpm.ddpm_pad_mask import DDPMPadMask
 from .network.ddpm.ddpm_time_embedding import DDPMTimeEmbedding
 from .block.swiglu import SwiGLU
 from .flowmakers.cross_attention import CrossAttention
@@ -54,6 +54,8 @@ from .activation.softmax import Softmax
 from .transform.rope import RoPE
 from .transform.causal import Causal
 from .transform.scale import Scale
+from .transform.text_pos_embedding import TextPosEmbedding
+from .block.u_net import UNet
 from .loss.logloss import LogLoss
 from .loss.squared_loss import SquaredLoss
 from .loss.loss import Loss

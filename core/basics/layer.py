@@ -22,24 +22,17 @@ def check_shapes(shape1: ShapeFlow, shape2: ShapeFlow) -> bool:
 
 
 class Layer:
-    def __init__(self: Layer, receive: Receive = (0,), _receive: int | None = None) -> None:
-        if _receive:
-            self._receive = _receive
+    def __init__(self: Layer, receive: Receive = (0,)) -> None:
         self.lr: float = 0.0
         self.input_shape: ShapeFlow = ((),)
         self.output_shape: ShapeFlow = ((),)
         self.input: TensorFlow | None = None
-        if not hasattr(self, "_receive"):
-            self._receive: int = 1
-        if self._receive != -1 and len(receive) != self._receive:
-            raise ValueError(self._receive, receive)
         self.receive: Receive = receive
         self._id: int = -1
         self.parameters: list[str] = []
+        self.frozen = False
 
     def set_input_shape(self: Layer, input_shape: ShapeFlow) -> ShapeFlow:
-        if self._receive != -1 and len(input_shape) != self._receive:
-            raise ValueError(input_shape, self._receive, self.receive)
         self.input_shape = input_shape
         self.output_shape = self.input_shape
         return self.output_shape
@@ -55,7 +48,7 @@ class Layer:
         if memorize:
             self.input = entry
         output = None
-        if self._receive == 1:
+        if len(self.input_shape) == 1:
             output = self.feed_forward(entry[0])
         else:
             output = self.feed_forward(entry)
@@ -95,7 +88,6 @@ class Layer:
             "input_shape": self.input_shape,
             "output_shape": self.output_shape,
             "receive": self.receive,
-            "_receive": self._receive,
             "_id": self._id,
             "parameters": self.parameters,
         }
@@ -106,7 +98,6 @@ class Layer:
         self.input_shape = data["input_shape"]
         self.output_shape = data["output_shape"]
         self.receive = data["receive"]
-        self._receive = data["_receive"]
         self._id = data["_id"]
         self.parameters = data["parameters"]
 
@@ -140,6 +131,9 @@ class Layer:
 
     def get_parameters(self: Layer) -> int:
         return sum([getattr(self, param_name).size for param_name in self.parameters])
+    
+    def freeze(self: Layer) -> None:
+        self.frozen = True
 
     def save(self: Layer, name: str) -> None:
         from data import SaveHandler

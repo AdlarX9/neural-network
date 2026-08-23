@@ -5,10 +5,10 @@ from ..activation.relu import ReLU
 from ..transform.flatten import Flatten
 from .mlp import MLP
 from ..basics.layer import Layer
-from ..basics.network import Network
+from ..basics.block import Block
 
 
-class CNN(Network):
+class CNN(Block):
     def __init__(
         self: CNN,
         parameters: tuple[list[tuple[int, int, int, int]], list[int]] = ([(1, 1, 1, 1), (1, 1, 1, 1)], [1]),
@@ -31,4 +31,6 @@ class CNN(Network):
         mlp = MLP(neuron_numbers=[N * K * S] + mlp_params)
         layers.append(mlp)
         layers += more_layers
-        super().__init__(layers, input_shape, lr)
+        super().__init__(layers)
+        self.set_lr(lr)
+        self.set_input_shape((input_shape,))

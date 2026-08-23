@@ -20,10 +20,10 @@ class LSTMNetwork(TextNetwork):
         input_shape = (0,)
         if embedding is not None:
             layers = [Recurrent([LSTM()]), OneHotMaker(embedding)] + more_layers
-            input_shape = (embedding.dim, -1)
-        super().__init__(
-            layers=layers, input_shape=input_shape, lr=lr, embedding=embedding
-        )
+            input_shape = (embedding.tokenizer.length(), -1)
+        super().__init__(layers=layers, embedding=embedding)
+        self.set_lr(lr)
+        self.set_input_shape((input_shape,))
 
     def predict_next_token(self: LSTMNetwork, beginning: str) -> str:
         for layer in self.layers:

@@ -10,11 +10,9 @@ class GPT(TextNetwork):
     def __init__(
         self: GPT,
         layers: list[Layer] = [],
-        input_shape: Shape = (0,),
-        lr: float = 0.001,
         embedding: Embedding = Embedding(),
     ) -> None:
-        super().__init__(layers, input_shape, lr, embedding)
+        super().__init__(layers, embedding)
 
     def generate(self: GPT, sentence: str, nbr_of_tokens: int = 80, temperature: float | None = None) -> str:
         for _ in range(nbr_of_tokens):

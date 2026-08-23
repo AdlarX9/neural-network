@@ -14,10 +14,12 @@ from ..utils.typing import ShapeFlow, Receive2, SaveData
 
 
 class CrossAttention(Block):
-    def __init__(self: CrossAttention, H: int = 1, receive: Receive2 = (0, 1)) -> None:
+    def __init__(
+        self: CrossAttention, H: int = 1, mask: Layer | None = None, receive: Receive2 = (0, 1)
+    ) -> None:
         self.H: int = H
         self.d_h: int = 0
-        self._receive = 2
+        self.mask = mask
         super().__init__([], receive)
 
     def _get_layers(self: CrossAttention) -> list[Layer]:
@@ -29,6 +31,10 @@ class CrossAttention(Block):
             Transpose(receive=(1,)),  # K^T
             Matmul(receive=(1, 0)),  # K^T @ Q
             Scale(1 / math.sqrt(self.d_h), receive=(0,)),  # K^T @ Q / sqrt(d_h)
+        ]
+        if self.mask is not None:
+            layers.append(self.mask)
+        layers += [
             Softmax(axis=1, receive=(0,)),  # Softmax(K^T @ Q / sqrt(d_h))
             Matmul(receive=(1, 0)),  # V @ Softmax(K^T @ Q / sqrt(d_h))
             Reshape((self.H * self.d_h, -1), receive=(0,)),  # Concat head results

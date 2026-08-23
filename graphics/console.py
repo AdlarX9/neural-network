@@ -9,11 +9,17 @@ if TYPE_CHECKING:
 
 
 class ConsoleVisualization:
-    def __init__(self: ConsoleVisualization, trainer: Trainer, stream=None) -> None:
-        self.total_batches = max(1, trainer.total_batches)
-        self.total_items = max(1, trainer.total_items)
-        self.models = [network.__class__.__name__ for network in trainer.networks]
-        self.parameters = [network.get_parameters() for network in trainer.networks]
+    def __init__(self: ConsoleVisualization, trainer: Trainer | None = None, stream=None) -> None:
+        if trainer is not None:
+            self.total_batches = max(1, trainer.total_batches)
+            self.total_items = max(1, trainer.total_items)
+            self.models = [layer.__class__.__name__ for layer in trainer.layers]
+            self.parameters = [layer.get_parameters() for layer in trainer.layers]
+        else:
+            self.total_batches = 1
+            self.total_items = 1
+            self.models = []
+            self.parameters = []
         self.stream = stream if stream is not None else sys.stdout
         self.started_at = time.perf_counter()
         self.batch_index = 0
