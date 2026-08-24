@@ -9,7 +9,7 @@ from ...block.linear import Linear
 from ...text.text_network import TextNetwork
 from ...utils.typing import Receive1
 from ...parameterized.embedding import Embedding
-from ...text.byte_tokenizer import ByteTokenizer
+from ...text.tokenizer import Tokenizer
 from ...block.mha import MHA
 from ...transform.text_pos_embedding import TextPosEmbedding
 
@@ -17,12 +17,14 @@ from ...transform.text_pos_embedding import TextPosEmbedding
 class DDPMTextEncoder(TextNetwork):
     def __init__(
         self: DDPMTextEncoder,
-        vocab_size: int = 8192,
+        tokenizer: Tokenizer | None = None,
         embedding_dim: int = 128,
         head_numbers=[4, 4, 4, 4],
         receive: Receive1 = (0,),
     ) -> None:
-        embedding = Embedding(ByteTokenizer(vocab_size), 128)
+        if tokenizer is None:
+            return
+        embedding = Embedding(tokenizer, 128)
         layers: list[Layer] = [TextPosEmbedding()]
         for H in head_numbers:
             layers.append(
@@ -48,7 +50,10 @@ class DDPMTextEncoder(TextNetwork):
             )
         layers += [
             RMSNorm(),
-            Linear(vocab_size),
         ]
 
-        super().__init__(layers, embedding, receive)
+        super().__init__(
+            layers=layers,
+            embedding=embedding,
+            receive=receive,
+        )

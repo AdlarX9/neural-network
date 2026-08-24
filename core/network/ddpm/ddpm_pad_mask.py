@@ -10,7 +10,9 @@ class DDPMPadMask(Layer):
         self.nbr_of_pad: int = 0
 
     def feed_forward(self: DDPMPadMask, entry: Tensor) -> Tensor:
-        n, p = entry.shape
-        mask = np.zeros((n, p))
-        mask[-self.nbr_of_pad :, :] = -np.inf
+        if self.nbr_of_pad == 0:
+            return entry
+        C, n, p = entry.shape
+        mask = np.zeros((C, n, p))
+        mask[:, -self.nbr_of_pad :, :] = -np.inf
         return entry + mask

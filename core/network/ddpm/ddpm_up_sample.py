@@ -14,8 +14,8 @@ class DDPMUpSample(Block):
         1: image à agrandir (C, H, W)
         """
         layers: list[Layer] = [
-            UpSample(factor=2, receive=(0,)),
-            Conv(N=previous_C, K=3, receive=(0,)),
+            UpSample(factor=2, receive=(1,)),
+            Conv(N=previous_C, K=3, receive=(1,)),
             Concat(axis=0, receive=(0, 1)),
         ]
         super().__init__(layers, receive)

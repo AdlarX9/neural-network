@@ -20,8 +20,11 @@ class WordTokenizer(Tokenizer):
     def __init__(self: WordTokenizer) -> None:
         self.V: dict[str, int] = {}
 
-    def build_vocab(self: WordTokenizer, corpus: str) -> None:
-        words = normalize(corpus).split(" ")
+    def build_vocab(self: WordTokenizer, corpus: str, force: bool = False) -> None:
+        if force:
+            words = corpus.split(" ")
+        else:
+            words = normalize(corpus).split(" ")
         index = len(self.V)
         for word in words:
             if word not in self.V:

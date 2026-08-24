@@ -14,7 +14,6 @@ class DDPMSelfAttention(Block):
 
     def _get_layers(self: DDPMSelfAttention, shape: ShapeFlow) -> list[Layer]:
         C, H, W = shape[0]
-        d_h = C // H
         layers: list[Layer] = [
             Reshape(shape=(C, H * W)),
             MHA(H, mask=DDPMPadMask()),

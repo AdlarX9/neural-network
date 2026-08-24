@@ -41,6 +41,12 @@ class DDPMResBlock(Block):
             SiLU(receive=(0,)),
             Dropout(p=0.1, inverted=True, receive=(0,)),
             Conv(N=self.C, K=3, receive=(0,)),
+        ]
+        if self.C != C:
+            layers += [
+                Conv(N=self.C, K=1, receive=(1,)),
+            ]
+        layers += [
             Add(receive=(0, 1)),
         ]
         return layers

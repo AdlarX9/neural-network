@@ -5,7 +5,7 @@ from ...utils.typing import Receive1, Tensor, ShapeFlow, ParamGrad, SaveData
 
 
 class GroupNorm(Layer):
-    def __init__(self: GroupNorm, groups: int, receive: Receive1 = (0,)) -> None:
+    def __init__(self: GroupNorm, groups: int = 0, receive: Receive1 = (0,)) -> None:
         super().__init__(receive)
         self.groups = groups
 

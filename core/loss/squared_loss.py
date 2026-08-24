@@ -16,16 +16,18 @@ class SquaredLoss(Loss):
         for pred, ans in zip(prediction, answer):
             if pred.shape != ans.shape:
                 raise ValueError("prediction and answer tensors must have matching shapes")
-            losses.append(float(np.sum(0.5 * (pred - ans) ** 2)))
+            losses.append(float(np.sum(0.5 * (pred - ans) ** 2)) / np.size(pred))
         return tuple(losses)
 
     def get_gradient(self: SquaredLoss, prediction: TensorFlow, answer: TensorFlow) -> TensorFlow:
         if len(prediction) != len(answer):
-            raise ValueError("prediction and answer must have the same number of tensors")
+            raise ValueError(
+                "prediction and answer must have the same number of tensors:", len(prediction), len(answer)
+            )
 
         gradients = []
         for pred, ans in zip(prediction, answer):
             if pred.shape != ans.shape:
                 raise ValueError("prediction and answer tensors must have matching shapes")
-            gradients.append(pred - ans)
+            gradients.append((pred - ans) / np.size(pred))
         return tuple(gradients)

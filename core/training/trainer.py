@@ -140,6 +140,9 @@ class Trainer:
     def compute_accuracy(self: Trainer, prediction: TensorFlow, answer: TensorFlow) -> tuple[float, ...]:
         accuracies: list[float] = []
         for pred, ans in zip(prediction, answer):
+            if len(pred.shape) != 2:
+                accuracies.append(0.0)
+                continue
             _, p = pred.shape
             if p == 0:
                 accuracies.append(0.0)

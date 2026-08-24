@@ -34,6 +34,7 @@ from .transform.flatten import Flatten
 from .transform.global_average_pooling import GlobalAveragePooling
 from .block.res import Res
 from .block.recurrent import Recurrent
+from .transform.up_sample import UpSample
 from .parameterized.lstm import LSTM
 from .flowmakers.add import Add
 from .flowmakers.multiply import Multiply

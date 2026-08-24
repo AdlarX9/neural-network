@@ -1,7 +1,10 @@
 from __future__ import annotations
-from ..utils.typing import TrainData, Tokens
+from ..utils.typing import TrainData, Tokens, TensorFlow
 from ..text.text_network import TextNetwork
+from ..network.ddpm.ddpm import DDPM
 import random
+import numpy as np
+import math
 
 
 class Data:
@@ -49,3 +52,14 @@ class Data:
         stride: int = 128,
     ) -> None:
         self.build_tokens_data(text_network, self.get_samples(text_network, text, context_length, stride))
+
+    def build_ddpm_data(self: Data, ddpm: DDPM, data: list[tuple[TensorFlow, TensorFlow]]) -> None:
+        self.training_set = []
+        for text_one_hot, image in data:
+            t = random.randint(1, ddpm.T - 1)
+            C, n, p = image[0].shape
+            noise = np.random.randn(C, n, p)
+            blurry_image = (
+                math.sqrt(ddpm.get_alpha_bar(t)) * image[0] + math.sqrt(1 - ddpm.get_alpha_bar(t)) * noise
+            )
+            self.training_set.append(((blurry_image, text_one_hot[0], np.array([[t]])), (noise,)))

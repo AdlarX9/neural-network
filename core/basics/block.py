@@ -33,12 +33,31 @@ class Block(Layer):
     ) -> tuple[Any, ...]:
         volume = list(quantity)
         for layer in self.layers:
+
+            show = self.__class__.__name__ == "for debug"
+            if show:
+                print(layer.__class__.__name__, layer._id)
+                print(volume if type(volume[0]) == tuple else [el.shape for el in volume])
+
             entry = tuple([volume[idx] for idx in layer.receive])
             output = list(function(layer, entry))
+
+            if show:
+                print(
+                    entry if type(entry[0]) == tuple else [el.shape for el in entry],
+                    "=>",
+                    output if type(output[0]) == tuple else [el.shape for el in output],
+                )
+
             for i in sorted(layer.receive, reverse=True):
                 del volume[i]
             separator = min(layer.receive)
             volume[separator:separator] = output
+
+            if show:
+                print("=>", volume if type(volume[0]) == tuple else [el.shape for el in volume])
+                print("")
+
         return tuple(volume)
 
     def set_input_shape(self: Block, input_shape: ShapeFlow) -> ShapeFlow:
@@ -56,15 +75,34 @@ class Block(Layer):
         volume = list(gradient)
         params: ParamGrad = {}
         for layer in reversed(self.layers):
+
+            show = self.__class__.__name__ == "for debug"
+            if show:
+                print(layer.__class__.__name__, layer._id, layer.receive, len(layer.output_shape))
+                print([el.shape for el in volume])
+
             beginning, end = min(layer.receive), min(layer.receive) + len(layer.output_shape)
             input_slice: TensorFlow = tuple(volume[beginning:end])
             del volume[beginning:end]
-            output = layer.backprop(input_slice)
-            params |= output[1]
-            losses: list[tuple[int, Tensor]] = [(el, output[0][idx]) for idx, el in enumerate(layer.receive)]
+            output, param = layer.backprop(input_slice)
+
+            if show:
+                print(
+                    [el.shape for el in input_slice],
+                    "=>",
+                    [el.shape for el in output],
+                )
+
+            params |= param
+            losses: list[tuple[int, Tensor]] = [(el, output[idx]) for idx, el in enumerate(layer.receive)]
             losses = sorted(losses, key=lambda x: x[0])
             for pos, loss in losses:
                 volume.insert(pos, loss)
+
+            if show:
+                print("=>", [el.shape for el in volume])
+                print("")
+
         return tuple(volume), params
 
     def get_data(self: Block) -> SaveData:

@@ -53,6 +53,8 @@ def col2im(cols: Tensor, input_shape: Shape, K: int, S: int, P: int) -> Tensor:
 class Conv(Layer):
     def __init__(self: Conv, N: int = 0, K: int = 0, S: int = 1, P: int = -1, receive: Receive1 = (0,)):
         super().__init__(receive)
+        if K == 0:
+            return
         self.K = K  # Watching field dimension
         self.S = S  # Stride
         self.N = N

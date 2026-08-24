@@ -15,10 +15,10 @@ class DDPMTimeEmbedding(Block):
         0: time t (1 x 1) -> | 0: time embedding (512 x 1)
         """
         layers: list[Layer] = [
-            SinEmbedding(dim=dim[0], receive=(2,)),
-            Linear(neuron_number=dim[1], receive=(2,)),
-            SiLU(receive=(2,)),
-            Linear(neuron_number=dim[2], receive=(2,)),
+            SinEmbedding(dim=dim[0]),
+            Linear(neuron_number=dim[1]),
+            SiLU(),
+            Linear(neuron_number=dim[2]),
         ]
 
         super().__init__(layers, receive)
