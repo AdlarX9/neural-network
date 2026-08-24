@@ -78,13 +78,7 @@ class Diffusion(Block):
         self.jump = data["jump"]
 
     def get_beta(self: Diffusion, t: int) -> float:
-        # return self.beta_min + (t - 1) / (self.T - 1) * (self.beta_max - self.beta_min)
-        def alpha_bar(j: int) -> float:
-            s = 0.008
-            f = (j / self.T + s) / (1 + s)
-            return cos(pi / 2 * f) ** 2
-
-        return 1 - alpha_bar(t) / alpha_bar(t - 1)
+        return 1 - self.get_alpha_bar(t) / self.get_alpha_bar(t - 1)
 
     def get_alpha(self: Diffusion, t: int) -> float:
         return 1.0 - self.get_beta(t)
@@ -92,10 +86,6 @@ class Diffusion(Block):
     def get_alpha_bar(self: Diffusion, t: int) -> float:
         if not 0 <= t <= self.T:
             raise ValueError(f"t must be in [0, {self.T}], got {t}")
-        # alpha_bar = 1.0
-        # for i in range(1, t + 1):
-        #     alpha_bar *= self.get_alpha(i)
-        # return alpha_bar
         s = 0.008
         f = (t / self.T + s) / (1 + s)
         return cos(pi / 2 * f) ** 2

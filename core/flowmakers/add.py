@@ -14,21 +14,59 @@ class Add(Layer):
         if len(input_shape) == 0:
             raise ValueError("Add requires at least one input")
 
-        # Vérifie que les shapes sont compatibles avec le broadcasting NumPy
-        reference_shape = input_shape[0]
+        def broadcast_shapes_manual(*shapes: tuple[int, ...]) -> tuple[int, ...]:
+            """
+            Broadcasting NumPy avec support des dimensions inconnues (-1).
 
-        for shape in input_shape[1:]:
-            try:
-                np.broadcast_shapes(reference_shape, shape)
-            except ValueError:
-                raise ValueError(
-                    "Incompatible shapes for broadcasting:",
-                    reference_shape,
-                    shape,
-                )
+            Règles :
+                a + a  -> a
+                1 + a  -> a
+                -1 + -1 -> -1
+                -1 + a  -> -1
 
-        self.output_shape = (np.broadcast_shapes(*input_shape),)
+            Les shapes sont alignées à droite comme avec NumPy.
+            """
 
+            max_ndim = max(len(shape) for shape in shapes)
+
+            # On aligne toutes les shapes à droite.
+            aligned_shapes = [(1,) * (max_ndim - len(shape)) + shape for shape in shapes]
+
+            output_shape = []
+
+            for dimensions in zip(*aligned_shapes):
+
+                known = [dim for dim in dimensions if dim != -1]
+
+                # Toutes les dimensions sont inconnues.
+                if not known:
+                    output_shape.append(-1)
+                    continue
+
+                # Les dimensions connues doivent être compatibles.
+                non_one = [dim for dim in known if dim != 1]
+
+                if len(set(non_one)) > 1:
+                    raise ValueError(f"Incompatible shapes for broadcasting: {shapes}")
+
+                # S'il y a au moins un -1, on ne connaît pas
+                # suffisamment la dimension finale.
+                if -1 in dimensions:
+                    output_shape.append(-1)
+                else:
+                    # Toutes les dimensions sont connues :
+                    # 1 est broadcasté vers la dimension non-1.
+                    output_shape.append(non_one[0] if non_one else 1)
+
+            return tuple(output_shape)
+
+        # Vérification / calcul du broadcasting.
+        try:
+            output_shape = broadcast_shapes_manual(*input_shape)
+        except ValueError:
+            raise ValueError(f"Incompatible shapes for broadcasting: {input_shape}")
+
+        self.output_shape = (output_shape,)
         return self.output_shape
 
     def feed_forward(

@@ -1,11 +1,11 @@
-from core import LLaMA, Embedding, ByteTokenizer, WordTokenizer, Data, Trainer, LogLoss
+from core import LLaMA, ByteTokenizer, Data, Trainer, LogLoss
 from data import scrap_text, SaveHandler
 from graphics import chat
 import math
 
 
 def llama():
-    gpt_name = "llama-23m"
+    gpt_name = "llama-3m"
     if not SaveHandler().has(gpt_name):
         gpt = LLaMA(
             vocab_size=8192,

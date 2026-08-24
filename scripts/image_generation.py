@@ -18,6 +18,7 @@ def image_generation() -> None:
     else:
         diffusion = Diffusion2M()
         diffusion.load(diffusion_name)
+    diffusion.jump = 15
 
     config = [
         {
@@ -25,7 +26,6 @@ def image_generation() -> None:
             "adam": True,
             "max_lr": 3e-4,
             "final_lr": 3e-5,
-            'warmup': 10_000,
             "cosine_decay": (0, 300_000),
         }
     ]

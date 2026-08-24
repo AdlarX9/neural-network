@@ -2,21 +2,21 @@
 
 ## General
 
-This program showcases a general *neural network* built **from scratch**, and exposes by default several scripts showing off *incredible performances* in **word prediction**, **number recognition** and **shape learning**.
+This program showcases a general *neural network* built **from scratch**, and exposes by default several scripts showing off *incredible performances* in **image generation**, **word prediction**, **number recognition** and **shape learning**.
 
-This project is built *as a library*, which offers different objects that allow you to build **whatever AI system that you want**. To make your own **custom model**, you just have to specify which *layers* you want, you can choose **from a variety of layers and pre-architectured networks**.
+This project is built *as a library*, which offers different objects that allow you to build **whatever AI system that you want**. To make your own **custom model**, you just have to specify which *layers* you want, you can choose **from a variety of layers, pre-architectured networks and training algorithm**.
 
 To learn **how to use it** and create **your own AI tools**, just check out the default scripts *provided* in the `/scripts` directory.
 
 ---
 
-It is important to remember that, even if your **models are saved as** *binary files*, ***they are readable and usable only by this project***.  
-This project *is closer to* an **sandbox** to **learn and play with AI** than it is to a *production tool* and a *proper environment* to run AI at the greatest speed possible.
+It is important to remember that, even if your **models are saved as** *json and binary files*, ***they are readable and usable only by this project***.  
+This project *is closer to* a **sandbox** to **learn and play with AI** than it is to a *production tool* and a *proper environment* to run AI at the greatest speed possible.
 
 ## About
 
 I have **designed** and **coded** myself the *core algorithms* of **deep learning** you will find in this project. I have imagined the **main architecture** after *teaching myself* the basics of **machine learning** and deep learning.  
-Therefore, **no code is AI generated** as it is part of a **learning process** *(except for the `/graphics` directory :)*
+Therefore, **no code is AI generated** as it is part of a **learning process** *(except for the `/graphics` stuff :)*
 
 ## Getting started
 
@@ -45,6 +45,19 @@ python main.py
 ```
 
 # Examples
+
+## Image generation
+
+This projects provides an *image generation* script, which trains a small **diffusion model** and runs a window on your computer that **lets you generate images**. As generating astronauts riding unicorns on the moon requires a lot of *compute* and *memory*, you will only be able to generate **numbers from 0 to 9**. Here are some *examples*:
+
+> ![5_1](./examples/generation_1.png)  
+> *The number **5**, version 1*
+
+> ![5_1](./examples/generation_2.png)  
+> *The number **5**, version 2*
+
+> ![5_1](./examples/generation_3.png)  
+> *The number **5**, version 3*
 
 ## Word prediction
 
