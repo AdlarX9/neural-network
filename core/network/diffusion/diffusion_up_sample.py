@@ -7,8 +7,8 @@ from ...flowmakers.concat import Concat
 from ...utils.typing import Receive2
 
 
-class DDPMUpSample(Block):
-    def __init__(self: DDPMUpSample, previous_C: int = 0, receive: Receive2 = (0, 1)) -> None:
+class DiffusionUpSample(Block):
+    def __init__(self: DiffusionUpSample, previous_C: int = 0, receive: Receive2 = (0, 1)) -> None:
         """
         0: skip connection -> 0: image agrandie concaténée (2 * previous_C, 2H, 2W)
         1: image à agrandir (C, H, W)

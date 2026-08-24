@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .ddpm_pad_mask import DDPMPadMask
+from .diffusion_pad_mask import DiffusionPadMask
 from ...basics.layer import Layer
 from ...block.res import Res
 from ...parameterized.norm.rms_norm import RMSNorm
@@ -14,9 +14,9 @@ from ...block.mha import MHA
 from ...transform.text_pos_embedding import TextPosEmbedding
 
 
-class DDPMTextEncoder(TextNetwork):
+class DiffusionTextEncoder(TextNetwork):
     def __init__(
-        self: DDPMTextEncoder,
+        self: DiffusionTextEncoder,
         tokenizer: Tokenizer | None = None,
         embedding_dim: int = 128,
         head_numbers=[4, 4, 4, 4],
@@ -32,7 +32,7 @@ class DDPMTextEncoder(TextNetwork):
                     Block(
                         [
                             RMSNorm(),
-                            MHA(H, mask=DDPMPadMask()),
+                            MHA(H, mask=DiffusionPadMask()),
                         ]
                     )
                 )

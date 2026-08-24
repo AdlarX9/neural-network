@@ -1,7 +1,7 @@
 from __future__ import annotations
 from ..utils.typing import TrainData, Tokens, TensorFlow
 from ..text.text_network import TextNetwork
-from ..network.ddpm.ddpm import DDPM
+from ..network.diffusion.diffusion import Diffusion
 import random
 import numpy as np
 import math
@@ -53,12 +53,13 @@ class Data:
     ) -> None:
         self.build_tokens_data(text_network, self.get_samples(text_network, text, context_length, stride))
 
-    def build_ddpm_data(self: Data, ddpm: DDPM, data: list[tuple[TensorFlow, TensorFlow]]) -> None:
+    def build_diffusion_data(self: Data, diffusion: Diffusion, data: list[tuple[TensorFlow, TensorFlow]], epochs: int = 1) -> None:
         self.training_set = []
         for text_one_hot, image in data:
-            t = random.randint(1, ddpm.T)
-            noise = np.random.randn(*image[0].shape)
-            blurry_image = (
-                math.sqrt(ddpm.get_alpha_bar(t)) * image[0] + math.sqrt(1 - ddpm.get_alpha_bar(t)) * noise
-            )
-            self.training_set.append(((blurry_image, text_one_hot[0], np.array([[t]])), (noise,)))
+            for _ in range(epochs):
+                t = random.randint(1, diffusion.T)
+                noise = np.random.randn(*image[0].shape)
+                blurry_image = (
+                    math.sqrt(diffusion.get_alpha_bar(t)) * image[0] + math.sqrt(1 - diffusion.get_alpha_bar(t)) * noise
+                )
+                self.training_set.append(((blurry_image, text_one_hot[0], np.array([[t]])), (noise,)))

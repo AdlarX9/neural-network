@@ -4,12 +4,12 @@ from ...basics.layer import Layer
 from ...utils.typing import Receive1, Tensor
 
 
-class DDPMPadMask(Layer):
-    def __init__(self: DDPMPadMask, receive: Receive1 = (0,)) -> None:
+class DiffusionPadMask(Layer):
+    def __init__(self: DiffusionPadMask, receive: Receive1 = (0,)) -> None:
         super().__init__(receive)
         self.nbr_of_pad: int = 0
 
-    def feed_forward(self: DDPMPadMask, entry: Tensor) -> Tensor:
+    def feed_forward(self: DiffusionPadMask, entry: Tensor) -> Tensor:
         if self.nbr_of_pad == 0:
             return entry
         C, n, p = entry.shape

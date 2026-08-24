@@ -4,12 +4,13 @@ from PIL import Image, ImageTk
 import numpy as np
 
 
-class DDPMWindow:
-    def __init__(self, master: tk.Tk, ddpm) -> None:
+class DiffusionWindow:
+    def __init__(self, master: tk.Tk, diffusion, mode: str) -> None:
         self.master = master
-        self.ddpm = ddpm
+        self.diffusion = diffusion
+        self.mode = mode
 
-        self.master.title("DDPM")
+        self.master.title("diffusion")
         self.master.geometry("800x700")
         self.master.minsize(500, 500)
 
@@ -56,10 +57,11 @@ class DDPMWindow:
         self.master.update_idletasks()
 
         try:
-            image = self.ddpm.generate(text)
+            generate_method = getattr(self.diffusion, 'generate_' + self.mode)
+            image = generate_method(text)
 
             if not isinstance(image, np.ndarray):
-                raise TypeError("DDPM.generate() doit retourner un NDArray NumPy.")
+                raise TypeError("diffusion.generate() doit retourner un NDArray NumPy.")
 
             if image.ndim != 3:
                 raise ValueError(f"L'image doit être un tenseur 3D (C, H, W), reçu {image.shape}.")
@@ -123,7 +125,7 @@ class DDPMWindow:
             self.button.config(state="normal")
 
 
-def image_generator(ddpm) -> None:
+def image_generator(diffusion, mode: str) -> None:
     root = tk.Tk()
-    DDPMWindow(root, ddpm)
+    DiffusionWindow(root, diffusion, mode)
     root.mainloop()

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from .ddpm import DDPM
-from .ddpm_res_block import DDPMResBlock
-from .ddpm_cross_attention import DDPMCrossAttention
-from .ddpm_self_attention import DDPMSelfAttention
-from .ddpm_up_sample import DDPMUpSample
-from .ddpm_time_embedding import DDPMTimeEmbedding
-from .ddpm_text_encoder import DDPMTextEncoder
+from .diffusion import Diffusion
+from .diffusion_res_block import DiffusionResBlock
+from .diffusion_cross_attention import DiffusionCrossAttention
+from .diffusion_self_attention import DiffusionSelfAttention
+from .diffusion_up_sample import DiffusionUpSample
+from .diffusion_time_embedding import DiffusionTimeEmbedding
+from .diffusion_text_encoder import DiffusionTextEncoder
 
 from ...parameterized.norm.group_norm import GroupNorm
 from ...parameterized.conv import Conv
@@ -20,9 +20,9 @@ from ...text.tokenizer import Tokenizer
 from ...utils.typing import ShapeFlow
 
 
-class DDPM2M(DDPM):
+class Diffusion2M(Diffusion):
     def __init__(
-        self: DDPM,
+        self: Diffusion,
         L: int = 16,
         T: int = 200,
         tokenizer: Tokenizer | None = None,
@@ -35,13 +35,13 @@ class DDPM2M(DDPM):
 
         embeddings: list[Layer] = [
             # Text Embedding
-            DDPMTextEncoder(tokenizer, 32, [], receive=(1,)),
+            DiffusionTextEncoder(tokenizer, 32, [], receive=(1,)),
             # Time Embedding
-            DDPMTimeEmbedding(dim=(128, 256, 128), receive=(2,)),
+            DiffusionTimeEmbedding(dim=(128, 256, 128), receive=(2,)),
             # Image Embedding
             Conv(N=levels[1], K=3, receive=(0,)),  # (32 x H x W)
             Duplicate(factor=2, receive=(2,)),
-            DDPMResBlock(groups=groups, dropout=dropout, receive=(0, 2)),
+            DiffusionResBlock(groups=groups, dropout=dropout, receive=(0, 2)),
         ]
 
         down_blocks: list[Layer] = [
@@ -49,7 +49,7 @@ class DDPM2M(DDPM):
                 receive=(0, 2),
                 layers=[
                     Conv(N=levels[2], K=3, S=2, P=1),  # (64 x H/2 x W/2)
-                    DDPMResBlock(groups=groups, dropout=dropout, receive=(0, 1)),
+                    DiffusionResBlock(groups=groups, dropout=dropout, receive=(0, 1)),
                 ],
             ),
             Block(  # DOWN BLOCK 2 (BOTTLENECK)
@@ -57,10 +57,10 @@ class DDPM2M(DDPM):
                 layers=[
                     Conv(N=levels[3], K=3, S=2, P=1),  # (128 x H/4 x W/4)
                     Duplicate(factor=2, receive=(2,)),
-                    DDPMResBlock(groups=groups, dropout=dropout, receive=(0, 2)),
-                    DDPMSelfAttention(H=2, receive=(0,)),
-                    DDPMCrossAttention(H=4, receive=(0, 1)),
-                    DDPMResBlock(groups=groups, dropout=dropout, receive=(0, 1)),
+                    DiffusionResBlock(groups=groups, dropout=dropout, receive=(0, 2)),
+                    DiffusionSelfAttention(H=2, receive=(0,)),
+                    DiffusionCrossAttention(H=4, receive=(0, 1)),
+                    DiffusionResBlock(groups=groups, dropout=dropout, receive=(0, 1)),
                 ],
             ),
         ]
@@ -69,8 +69,8 @@ class DDPM2M(DDPM):
             Block(  # UP BLOCK 1
                 receive=(0, 2),
                 layers=[
-                    DDPMUpSample(previous_C=levels[2], receive=(0, 1)),  # (128 x H/2 x W/2)
-                    DDPMResBlock(
+                    DiffusionUpSample(previous_C=levels[2], receive=(0, 1)),  # (128 x H/2 x W/2)
+                    DiffusionResBlock(
                         C=levels[2], groups=groups, dropout=dropout, receive=(0, 1)
                     ),  # (64 x H/2 x W/2)
                 ],
@@ -78,8 +78,8 @@ class DDPM2M(DDPM):
             Block(  # UP BLOCK 2
                 receive=(0, 2),
                 layers=[
-                    DDPMUpSample(previous_C=levels[1], receive=(0, 1)),  # (64 x H x W)
-                    DDPMResBlock(C=levels[1], groups=groups, dropout=dropout, receive=(0, 1)),  # (32 x H x W)
+                    DiffusionUpSample(previous_C=levels[1], receive=(0, 1)),  # (64 x H x W)
+                    DiffusionResBlock(C=levels[1], groups=groups, dropout=dropout, receive=(0, 1)),  # (32 x H x W)
                 ],
             ),
         ]

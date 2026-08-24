@@ -16,9 +16,9 @@ from ...transform.reshape import Reshape
 from ...parameterized.norm.group_norm import GroupNorm
 
 
-class DDPMResBlock(Block):
+class DiffusionResBlock(Block):
     def __init__(
-        self: DDPMResBlock, C: int = -1, groups: int = 32, dropout: float = 0.1, receive: Receive2 = (0, 1)
+        self: DiffusionResBlock, C: int = -1, groups: int = 32, dropout: float = 0.1, receive: Receive2 = (0, 1)
     ) -> None:
         """
         0: image          | -> 0: image transformée
@@ -29,7 +29,7 @@ class DDPMResBlock(Block):
         self.dropout = dropout
         super().__init__([], receive)
 
-    def _get_layers(self: DDPMResBlock, shape: ShapeFlow) -> list[Layer]:
+    def _get_layers(self: DiffusionResBlock, shape: ShapeFlow) -> list[Layer]:
         C = shape[0][0]
         if self.C == -1:
             self.C = C
@@ -55,7 +55,7 @@ class DDPMResBlock(Block):
         ]
         return layers
 
-    def set_input_shape(self: DDPMResBlock, input_shape: ShapeFlow) -> ShapeFlow:
+    def set_input_shape(self: DiffusionResBlock, input_shape: ShapeFlow) -> ShapeFlow:
         self.layers = self._get_layers(input_shape)
         super().set_input_shape(input_shape)
         C, H, W = input_shape[0]
@@ -64,14 +64,14 @@ class DDPMResBlock(Block):
         self.output_shape = ((self.C, H, W),)
         return self.output_shape
 
-    def get_data(self: DDPMResBlock) -> SaveData:
+    def get_data(self: DiffusionResBlock) -> SaveData:
         data = super().get_data()
         data["C"] = self.C
         data["groups"] = self.groups
         data["dropout"] = self.dropout
         return data
 
-    def load_from_data(self: DDPMResBlock, data: SaveData, layer_types: dict[str, type[Layer]] = {}) -> None:
+    def load_from_data(self: DiffusionResBlock, data: SaveData, layer_types: dict[str, type[Layer]] = {}) -> None:
         super().load_from_data(data, layer_types)
         self.C = data["C"]
         self.groups = data["groups"]
