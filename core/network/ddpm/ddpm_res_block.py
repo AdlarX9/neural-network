@@ -17,12 +17,16 @@ from ...parameterized.norm.group_norm import GroupNorm
 
 
 class DDPMResBlock(Block):
-    def __init__(self: DDPMResBlock, C: int = -1, receive: Receive2 = (0, 1)) -> None:
+    def __init__(
+        self: DDPMResBlock, C: int = -1, groups: int = 32, dropout: float = 0.1, receive: Receive2 = (0, 1)
+    ) -> None:
         """
         0: image          | -> 0: image transformée
         1: time embedding |
         """
         self.C = C
+        self.groups = groups
+        self.dropout = dropout
         super().__init__([], receive)
 
     def _get_layers(self: DDPMResBlock, shape: ShapeFlow) -> list[Layer]:
@@ -31,15 +35,15 @@ class DDPMResBlock(Block):
             self.C = C
         layers: list[Layer] = [
             Duplicate(factor=2, receive=(0,)),
-            GroupNorm(groups=32, receive=(0,)),
+            GroupNorm(groups=self.groups, receive=(0,)),
             SiLU(receive=(0,)),
             Conv(N=self.C, K=3, receive=(0,)),
             Linear(neuron_number=self.C, receive=(2,)),
             Reshape(shape=(self.C, 1, 1), receive=(2,)),
             Add(receive=(0, 2)),
-            GroupNorm(groups=32, receive=(0,)),
+            GroupNorm(groups=self.groups, receive=(0,)),
             SiLU(receive=(0,)),
-            Dropout(p=0.1, inverted=True, receive=(0,)),
+            Dropout(p=self.dropout, inverted=True, receive=(0,)),
             Conv(N=self.C, K=3, receive=(0,)),
         ]
         if self.C != C:
@@ -63,8 +67,12 @@ class DDPMResBlock(Block):
     def get_data(self: DDPMResBlock) -> SaveData:
         data = super().get_data()
         data["C"] = self.C
+        data["groups"] = self.groups
+        data["dropout"] = self.dropout
         return data
 
     def load_from_data(self: DDPMResBlock, data: SaveData, layer_types: dict[str, type[Layer]] = {}) -> None:
         super().load_from_data(data, layer_types)
         self.C = data["C"]
+        self.groups = data["groups"]
+        self.dropout = data["dropout"]

@@ -56,9 +56,8 @@ class Data:
     def build_ddpm_data(self: Data, ddpm: DDPM, data: list[tuple[TensorFlow, TensorFlow]]) -> None:
         self.training_set = []
         for text_one_hot, image in data:
-            t = random.randint(1, ddpm.T - 1)
-            C, n, p = image[0].shape
-            noise = np.random.randn(C, n, p)
+            t = random.randint(1, ddpm.T)
+            noise = np.random.randn(*image[0].shape)
             blurry_image = (
                 math.sqrt(ddpm.get_alpha_bar(t)) * image[0] + math.sqrt(1 - ddpm.get_alpha_bar(t)) * noise
             )

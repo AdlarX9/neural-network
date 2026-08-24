@@ -19,9 +19,10 @@ def normalize(text: str) -> str:
 class WordTokenizer(Tokenizer):
     def __init__(self: WordTokenizer) -> None:
         self.V: dict[str, int] = {}
+        self.forced: bool = False
 
-    def build_vocab(self: WordTokenizer, corpus: str, force: bool = False) -> None:
-        if force:
+    def build_vocab(self: WordTokenizer, corpus: str) -> None:
+        if self.forced:
             words = corpus.split(" ")
         else:
             words = normalize(corpus).split(" ")
@@ -32,7 +33,10 @@ class WordTokenizer(Tokenizer):
                 index += 1
 
     def tokenize(self: WordTokenizer, text: str) -> Tokens:
-        words = normalize(text).split(" ")
+        if self.forced:
+            words = text.split(" ")
+        else:
+            words = normalize(text).split(" ")
         return [self.V[word] for word in words]
 
     def untokenize(self: WordTokenizer, tokens: Tokens) -> str:
@@ -43,8 +47,12 @@ class WordTokenizer(Tokenizer):
         return " ".join(words)
 
     def get_data(self: WordTokenizer) -> SaveData:
-        data = {"V": self.V}
+        data = {
+            "V": self.V,
+            "forced": self.forced,
+        }
         return data
 
     def load_from_data(self: WordTokenizer, data: SaveData) -> None:
         self.V = data["V"]
+        self.forced = data["forced"]

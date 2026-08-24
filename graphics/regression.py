@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable
 import tkinter as tk
 
 if TYPE_CHECKING:
-    from core import Network
+    from core import Layer
 
 WIDTH, HEIGHT = 2000, 800
 PLOT_SIZE = 680
@@ -12,7 +12,7 @@ GRID_SIZE = 80
 
 
 def regression(
-    network: Network,
+    network: Layer,
     teacher: Callable,
 ) -> None:
     network_dimensions = network.get_dimensions()
