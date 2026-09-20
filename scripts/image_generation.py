@@ -18,7 +18,6 @@ def image_generation() -> None:
     else:
         diffusion = Diffusion2M()
         diffusion.load(diffusion_name)
-    diffusion.jump = 15
 
     config = [
         {
@@ -32,14 +31,13 @@ def image_generation() -> None:
     data = Data()
     trainer = Trainer(config, data)
 
-    samples = load_mnist_data()
-    samples = [(text, image) for image, text in samples]
+    original_samples = load_mnist_data()
 
-    step = 1000
-    idx: int = 1
-    nbr_of_samples = ceil(len(samples) / step)
+    step = 200
+    idx: int = 15
+    nbr_of_samples = ceil(len(original_samples) / step)
 
-    def train(size: int = step):
+    def train(size: int = step, samples = []):
         title = f"{diffusion_name} training n°{str(idx)}/{str(nbr_of_samples)}"
         data.build_diffusion_data(diffusion, samples[:size])
         del samples[:size]
@@ -49,13 +47,15 @@ def image_generation() -> None:
     displayed: bool = False
     try:
         while True:
+            samples = [(text, image) for image, text in original_samples]
             while len(samples) >= step:
-                train(step)
+                train(step, samples)
                 idx += 1
-            train(len(samples))
+            train(len(samples), samples)
     except KeyboardInterrupt:
         displayed = True
         image_generator(diffusion, "ddim")
     finally:
         if not displayed:
             image_generator(diffusion, "ddim")
+        diffusion.save(diffusion_name)

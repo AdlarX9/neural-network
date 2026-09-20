@@ -46,9 +46,13 @@ class Diffusion2M(Diffusion):
 
         down_blocks: list[Layer] = [
             Block(  # DOWN BLOCK 1
-                receive=(0, 2),
+                receive=(0, 1, 2),
                 layers=[
                     Conv(N=levels[2], K=3, S=2, P=1),  # (64 x H/2 x W/2)
+                    Duplicate(factor=2, receive=(2,)),
+                    DiffusionResBlock(groups=groups, dropout=dropout, receive=(0, 2)),
+                    DiffusionSelfAttention(H=2, receive=(0,)),
+                    DiffusionCrossAttention(H=4, receive=(0, 1)),
                     DiffusionResBlock(groups=groups, dropout=dropout, receive=(0, 1)),
                 ],
             ),
@@ -67,12 +71,16 @@ class Diffusion2M(Diffusion):
 
         up_blocks: list[Layer] = [
             Block(  # UP BLOCK 1
-                receive=(0, 2),
+                receive=(0, 1, 2),
                 layers=[
                     DiffusionUpSample(previous_C=levels[2], receive=(0, 1)),  # (128 x H/2 x W/2)
+                    Duplicate(factor=2, receive=(2,)),
                     DiffusionResBlock(
                         C=levels[2], groups=groups, dropout=dropout, receive=(0, 1)
                     ),  # (64 x H/2 x W/2)
+                    DiffusionSelfAttention(H=2, receive=(0,)),
+                    DiffusionCrossAttention(H=4, receive=(0, 1)),
+                    DiffusionResBlock(groups=groups, dropout=dropout, receive=(0, 1)),
                 ],
             ),
             Block(  # UP BLOCK 2
