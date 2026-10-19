@@ -1,8 +1,8 @@
-from scripts import number_recognition, shape_learning, word_lstm, llama, image_generation
+from scripts import number_recognition, shape_learning, word_lstm, llama, image_generation, spacedot
 
 
 def main() -> None:
-    image_generation()
+    spacedot()
 
 
 if __name__ == "__main__":

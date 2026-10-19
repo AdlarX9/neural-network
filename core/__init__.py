@@ -25,6 +25,8 @@ from .text.gpt import GPT
 from .text.text_network import TextNetwork
 from .activation.silu import SiLU
 from .activation.relu import ReLU
+from .reinforcement.environment import Environment
+from .reinforcement.spacedot import Spacedot
 from .activation.activation import Activation
 from .transform.max_pooling import MaxPooling
 from .block.linear import Linear
